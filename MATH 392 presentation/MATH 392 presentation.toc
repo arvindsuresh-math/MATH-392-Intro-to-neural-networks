@@ -1,0 +1,7 @@
+\beamer@sectionintoc {2}{What is AI, anyway?}{3}{0}{1}
+\beamer@sectionintoc {3}{What is ML?}{8}{0}{2}
+\beamer@sectionintoc {4}{What is a NN?}{23}{0}{3}
+\beamer@sectionintoc {5}{Learning objectives}{31}{0}{4}
+\beamer@sectionintoc {6}{Course structure}{36}{0}{5}
+\beamer@sectionintoc {7}{Why enroll?}{42}{0}{6}
+\beamer@sectionintoc {8}{Conclusion}{47}{0}{7}
