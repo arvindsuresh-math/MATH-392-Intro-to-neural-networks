@@ -12,8 +12,6 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
    - [Step 3: Create the Conda Environment](#step-3-create-the-conda-environment)
    - [Step 4: Verify the Installation](#step-4-verify-the-installation)
    - [Step 5: Running Jupyter Notebooks in VS Code](#step-5-running-jupyter-notebooks-in-vs-code)
-- [Usage Examples](#usage-examples)
-- [Contact Information](#contact-information)
 
 ## Course Details
 
@@ -96,6 +94,8 @@ This course aims to provide students with a self-contained introduction to the m
 ### Step 3: Create the Conda Environment
 
 1. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
+   - Open the repository in VSCode.
+   - In VSCode, open a new terminal window.
    - In the terminal, run:
      ```bash
      conda env create -f environment.yml
@@ -127,20 +127,9 @@ This course aims to provide students with a self-contained introduction to the m
      ```
 
 3. **Open the Jupyter Notebook in VS Code**:
-   - In the VS Code Explorer, navigate to the directory containing the Jupyter notebook you want to open.
-   - Click on the notebook file (`.ipynb`) to open it.
+   - In the VS Code Explorer, navigate to the directory containing the Jupyter notebook (`.ipynb`)  and click (or double-click) on the file to open it. 
    - VS Code will automatically open the notebook in the Jupyter Notebook interface within the editor.
 
 4. **Run the notebook cells**:
-   - You can run the cells in the notebook by clicking the `Run` button or by pressing `Shift + Enter`.
-
-
-
-## Usage Examples
-- Example 1: Loading and visualizing data with Pandas and Matplotlib.
-- Example 2: Building and training a simple neural network with PyTorch.
-
-## Contact Information
-For any questions or issues, please contact:
-- **Instructor**: Arvind Suresh
-- **Email**: arvindsuresh@arizona.edu
+   - You can run the cells in the notebook by clicking the `Run` button or by pressing `Shift + Enter`. When you do this the first time, you will be asked to select a "kernel". The environment 
+   `math392` should be available as one of the options; select this and then run your cells.
