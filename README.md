@@ -25,15 +25,15 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
      - Go to the menu bar and select `Terminal` > `New Terminal`.
    - In the terminal, run:
      ```bash
-     git clone [your-repository-url]
-     cd [repository-name]
+     git clone https://github.com/arvindsuresh-math/MATH-392-Intro-to-neural-networks
+     cd MATH-392-Intro-to-neural-networks
      ```
 
 2. **Using GitHub Desktop**:
    - Download and install [GitHub Desktop](https://desktop.github.com/).
    - Open GitHub Desktop and sign in to your GitHub account.
    - Click on `File` > `Clone repository`.
-   - In the `URL` tab, paste the repository URL and choose the local path where you want to clone the repository.
+   - In the `URL` tab, paste the repository URL [MATH-392-Intro-to-neural-networks](https://github.com/arvindsuresh-math/MATH-392-Intro-to-neural-networks) and choose the local path where you want to clone the repository.
    - Click `Clone`.
 
 ### Step 3: Create the Conda Environment
