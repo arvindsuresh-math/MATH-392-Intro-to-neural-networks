@@ -10,8 +10,7 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
    - [Step 1: Install Miniconda](#step-1-install-miniconda)
    - [Step 2: Clone the Repository](#step-2-clone-the-repository)
    - [Step 3: Create the Conda Environment](#step-3-create-the-conda-environment)
-   - [Step 4: Verify the Installation](#step-4-verify-the-installation)
-   - [Step 5: Running Jupyter Notebooks in VS Code](#step-5-running-jupyter-notebooks-in-vs-code)
+   - [Step 4: Running Jupyter Notebooks in VS Code](#step-4-running-jupyter-notebooks-in-vs-code)
 
 ## Course Details
 
@@ -93,29 +92,35 @@ This course aims to provide students with a self-contained introduction to the m
 
 ### Step 3: Create the Conda Environment
 
-1. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
-   - Open the repository in VSCode.
-   - In VSCode, open a new terminal window.
+1. **Activate Conda**:
+   - Open the terminal in VS Code.
+   - If Conda is not already initialized, run:
+     ```bash
+     conda init
+     ```
+   - Close and reopen the terminal to apply the changes.
+
+2. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
+   - Open the repository in VS Code.
+   - In VS Code, open a new terminal window.
    - In the terminal, run:
      ```bash
      conda env create -f environment.yml
      ```
 
-2. **Activate the environment**:
+3. **Activate the environment**:
    - In the terminal, run:
      ```bash
      conda activate math392
      ```
 
-### Step 4: Verify the Installation
-
-1. **Verify that the environment is set up correctly**:
+4. **Verify that the environment is set up correctly**:
    - In the terminal, run:
      ```bash
      python -c "import torch; print(torch.__version__)"
      ```
 
-### Step 5: Running Jupyter Notebooks in VS Code
+### Step 4: Running Jupyter Notebooks in VS Code
 
 1. **Open the terminal in VS Code**:
    - Go to the menu bar and select `Terminal` > `New Terminal`.
