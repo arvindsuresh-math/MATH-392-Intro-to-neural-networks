@@ -10,7 +10,6 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
    - [Step 1: Install Miniconda](#step-1-install-miniconda)
    - [Step 2: Clone the Repository](#step-2-clone-the-repository)
    - [Step 3: Create the Conda Environment](#step-3-create-the-conda-environment)
-   - [Step 4: Running Jupyter Notebooks in VS Code](#step-4-running-jupyter-notebooks-in-vs-code)
 
 ## Course Details
 
@@ -115,26 +114,5 @@ This course aims to provide students with a self-contained introduction to the m
      ```
 
 4. **Verify that the environment is set up correctly**:
-   - In the terminal, run:
-     ```bash
-     python -c "import torch; print(torch.__version__)"
-     ```
-
-### Step 4: Running Jupyter Notebooks in VS Code
-
-1. **Open the terminal in VS Code**:
-   - Go to the menu bar and select `Terminal` > `New Terminal`.
-
-2. **Activate the Conda environment** (if not already activated):
-   - In the terminal, run:
-     ```bash
-     conda activate math392
-     ```
-
-3. **Open the Jupyter Notebook in VS Code**:
-   - In the VS Code Explorer, navigate to the directory containing the Jupyter notebook (`.ipynb`)  and click (or double-click) on the file to open it. 
-   - VS Code will automatically open the notebook in the Jupyter Notebook interface within the editor.
-
-4. **Run the notebook cells**:
-   - You can run the cells in the notebook by clicking the `Run` button or by pressing `Shift + Enter`. When you do this the first time, you will be asked to select a "kernel". The environment 
-   `math392` should be available as one of the options; select this and then run your cells.
+   - Open the Jupyter notebook `environment_check.ipynb` in VS Code.
+   - Follow the instructions in the notebook to run the cells and verify that all packages are installed correctly.
