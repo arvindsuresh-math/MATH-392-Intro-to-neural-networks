@@ -114,5 +114,5 @@ This course aims to provide students with a self-contained introduction to the m
      ```
 
 4. **Verify that the environment is set up correctly**:
-   - Open the Jupyter notebook `environment_check.ipynb` in VS Code.
+   - Open the Jupyter notebook `environment_check.ipynb` in the `Getting started` folder.
    - Follow the instructions in the notebook to run the cells and verify that all packages are installed correctly.
