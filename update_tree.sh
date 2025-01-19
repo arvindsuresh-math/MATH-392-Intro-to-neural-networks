@@ -1,17 +1,23 @@
 #!/bin/bash
 
-# Generate tree excluding common unnecessary files
-tree -I 'node_modules|.git|.DS_Store|__pycache__|*.pyc' > repo_structure.txt
+# Set output file
+TREE_FILE="REPOSITORY_STRUCTURE.md"
 
-# Extract tree content and update README.md
-awk '/## Repository Structure/{p=NR+1}p==NR{next} /```/{exit} {print}' README.md > temp.md
-echo "## Repository Structure" >> temp.md
-echo "\`\`\`bash" >> temp.md
-cat repo_structure.txt >> temp.md
-echo "\`\`\`" >> temp.md
-awk '!found && /## Repository Structure/{found=1;next} found&&/```/{found=0;next} !found' README.md >> temp.md
-mv temp.md README.md
+# Generate header with timestamp
+echo "# Repository Structure" > $TREE_FILE
+echo "Last updated: $(date)" >> $TREE_FILE
+echo "" >> $TREE_FILE
 
-# Clean up
-rm repo_structure.txt
+# Add tree structure in code block
+echo "\`\`\`bash" >> $TREE_FILE
 
+# List directories (all depths)
+tree -d -I 'node_modules|.git|__pycache__' >> $TREE_FILE
+
+echo "" >> $TREE_FILE
+echo "Files in root directory:" >> $TREE_FILE
+ls -p | grep -v / >> $TREE_FILE
+
+echo "\`\`\`" >> $TREE_FILE
+
+echo "Repository structure updated in $TREE_FILE"
