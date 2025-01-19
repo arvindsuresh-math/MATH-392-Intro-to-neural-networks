@@ -93,7 +93,6 @@ We will be using a bunch of different packages to write code in this course. We 
    Then, close and re-open the terminal to apply the changes.
    
 3. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
-   - Open the repository in VS Code, and open a new terminal window.
    - In the terminal, run:
       ```bash
       conda env create -f environment.yml
