@@ -1,0 +1,37 @@
+.
+├── Data collection
+│   └── data_collection.ipynb
+├── Datasets
+│   ├── house-prices-advanced-regression-techniques
+│   │   ├── data_description.txt
+│   │   ├── sample_submission.csv
+│   │   ├── test.csv
+│   │   └── train.csv
+│   ├── tips.csv
+│   └── titanic
+│       ├── gender_submission.csv
+│       ├── test.csv
+│       └── train.csv
+├── Getting started
+│   ├── environment_check.ipynb
+│   └── exploring_pandas.ipynb
+├── MATH 392 - Syllabus and weekly schedule
+│   ├── MATH 392 - Syllabus and weekly schedule.docx
+│   ├── MATH 392 - Syllabus and weekly schedule.pdf
+│   └── MATH 392 - Syllabus and weekly schedule.txt
+├── MATH 392 presentation
+│   ├── MATH 392 presentation.aux
+│   ├── MATH 392 presentation.fdb_latexmk
+│   ├── MATH 392 presentation.fls
+│   ├── MATH 392 presentation.log
+│   ├── MATH 392 presentation.nav
+│   ├── MATH 392 presentation.pdf
+│   ├── MATH 392 presentation.snm
+│   ├── MATH 392 presentation.synctex.gz
+│   ├── MATH 392 presentation.tex
+│   └── MATH 392 presentation.toc
+├── README.md
+├── environment.yml
+└── tree.txt
+
+8 directories, 27 files
