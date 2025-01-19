@@ -109,7 +109,7 @@ We will be using a bunch of different packages to write code in this course. We 
 
 I will regularly be adding/changing changes to the parent repo, and it is important to always work with the up-to-date version. Whenever you sit down to work on VS Code, **always start by doing the following**:
 
-1. Open your fork in GitHub Desktop, and make sure that your current branch is set to `main`.
+1. Open your repo GitHub Desktop, and make sure that your current branch is set to `main`.
 2. Click on `Fetch origin` to fetch the latest changes from the parent repo. 
 3. Click on `Branch` > `Merge into current branch` (select `parent/main`) to merge the changes from the parent repo into your local `main` branch.
 4. Click on `Push origin` to push the changes to your fork on GitHub (more precisely, to the `main` branch on your fork).
