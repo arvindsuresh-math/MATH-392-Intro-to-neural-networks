@@ -84,13 +84,11 @@ We will be using a bunch of different packages to write code in this course. We 
 1. **Download and install Miniconda**:
    - Go to the [Miniconda download page](https://docs.conda.io/en/latest/miniconda.html).
    - Download the installer for your operating system (Windows or macOS), and run it to complete the installation.
-
 2. **Initialize Conda**: Open the terminal in VS Code and run: 
    ```bash
    conda init
    ```
    Then, close and re-open the terminal to apply the changes. 
-
 3. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
    - Open the repository in VS Code, and open a new terminal window.
    - In the terminal, run:
@@ -110,38 +108,29 @@ We will be using a bunch of different packages to write code in this course. We 
 I will regularly be adding/changing changes to the parent repo, and it is important to always work with the up-to-date version. Whenever you sit down to work on VS Code, **always start by doing the following**:
 
 1. Open your fork in GitHub Desktop, and make sure that your current branch is set to `main`.
-
 2. Click on `Fetch origin` to fetch the latest changes from the parent repo. 
-
-2. Click on `Branch` > `Merge into current branch` (select `parent/main`) to merge the changes from the parent repo into your local `main` branch.
-
-3. Click on `Push origin` to push the changes to your fork on GitHub (more precisely, to the `main` branch on your fork).
+3. Click on `Branch` > `Merge into current branch` (select `parent/main`) to merge the changes from the parent repo into your local `main` branch.
+4. Click on `Push origin` to push the changes to your fork on GitHub (more precisely, to the `main` branch on your fork).
 
 ### Making changes to your fork
 
 You will often need to add/make changes to your fork. Remember, every time you sit down to work in VS Code, first update from the parent repo as outline above. Then, do the following:
 
 1. Open your fork in GitHub Desktop, and make sure that your current is set to `myname-work` (i.e. the branch you made for your changes).
-
 2. On VS Code, the bottom-left corner will show the current branch you are working it. Now, go ahead and make your changes to the files in your local repo. These changes are known only to the current branch `myname-work`.
-
 3. Save your changes (called **committing the changes**) as follows:
    - In GitHub Desktop, you will see the changed files listed in the `Changes` tab.
    - Add a summary of the changes you made in the `Summary` box.
    - Click `Commit to myname-work`.
-
 4. Click on `Push origin` to push your changes to your fork on GitHub (more precisely, to the `myname-work` branch on your fork).
-
 5. Finally, to merge these changes into the `main` branch of your fork, click on `Create pull request` on GitHub Desktop. 
 
 ## Tips for using Github Copilot
 
 If you want to make use of Github Copilot, there are three ways:
 1. **For short, simple tasks requiring no explanation**: Write a comment explaining (in natural language) what you want to accomplish, and hit enter. When you start typing in the next line (or after a few moments), copilot will give auto-complete suggestions that you can accept by hitting tab.
-
 2. **For somewhat longer tasks, still needing no explanation**:
 Start an inline chat with copilot and ask it to generate code to accomplish what you want. Copilot will generate code in place and typically include comments explaining what each block is doing.
-
 3. **For long, complex tasks requiring explanation**: 
 Use the separate copilot chat to write your prompt. Copilot will automatically explain the code it generates for you (in addition to comments for each code block).
 
