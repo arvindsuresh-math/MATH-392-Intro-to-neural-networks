@@ -73,6 +73,7 @@ This course aims to provide students with a self-contained introduction to the m
 ```bash
 git remote add parent https://github.com/arvindsuresh-math/MATH-392-Intro-to-neural-networks.git
 ```
+
 4. **Create a branch for work**: You will often need to add/make changes to your fork. Best practice is to always create a separate *branch* to make changes, and then merge these changes into your `main` branch. For simplicity, I suggest you make only one separate branch at the start of the semester:
    - In GitHub Desktop, click on `Current Branch` and select `New Branch`.
    - Name your branch (e.g., `myname-work`) and click `Create Branch`.
@@ -84,11 +85,13 @@ We will be using a bunch of different packages to write code in this course. We 
 1. **Download and install Miniconda**:
    - Go to the [Miniconda download page](https://docs.conda.io/en/latest/miniconda.html).
    - Download the installer for your operating system (Windows or macOS), and run it to complete the installation.
+     
 2. **Initialize Conda**: Open the terminal in VS Code and run: 
    ```bash
    conda init
    ```
-   Then, close and re-open the terminal to apply the changes. 
+   Then, close and re-open the terminal to apply the changes.
+   
 3. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
    - Open the repository in VS Code, and open a new terminal window.
    - In the terminal, run:
