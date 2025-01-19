@@ -6,10 +6,13 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
 - [Course Details](#course-details)
 - [Course Overview](#course-overview)
 - [Weekly Topics](#weekly-topics)
-- [Environment Setup](#environment-setup)
-   - [Step 1: Install Miniconda](#step-1-install-miniconda)
-   - [Step 2: Clone the Repository](#step-2-clone-the-repository)
-   - [Step 3: Create the Conda Environment](#step-3-create-the-conda-environment)
+- [Setup](#setup)
+  - [Setup your own repository](#setup-your-own-repository)
+  - [Create the Conda Environment](#create-the-conda-environment)
+- [Managing your fork](#managing-your-fork)
+  - [Updating from the parent](#updating-from-the-parent)
+  - [Making changes to your fork](#making-changes-to-your-fork)
+- [Tips for using Github Copilot](#tips-for-using-github-copilot)
 
 ## Course Details
 
@@ -54,65 +57,95 @@ This course aims to provide students with a self-contained introduction to the m
 - **Week 12**: Regularization in Neural Networks
 - **Week 13**: Model Evaluation and Hyperparameter Tuning
 
-## Environment Setup
+## Setup
 
-### Step 1: Install Miniconda
+### Setup your own repository
 
-1. **Download Miniconda**:
-   - Go to the [Miniconda download page](https://docs.conda.io/en/latest/miniconda.html).
-   - Download the installer for your operating system (Windows, macOS, or Linux).
+1. **Fork the repository**: On the MATH 392 repo page on github, click on the `Fork` button at the top right corner of the page. This will create a copy of the repo (called a *fork*) under your GitHub account. You can make changes to your fork without affecting the parent repo (which I will be making changes to).
 
-2. **Install Miniconda**:
-   - Follow the installation instructions for your operating system:
-     - **Windows**: Run the downloaded `.exe` file and follow the prompts.
-     - **macOS**: Open the downloaded `.pkg` file and follow the prompts.
-     - **Linux**: Open a terminal, navigate to the directory where you downloaded the installer, and run:
-       ```bash
-       bash Miniconda3-latest-Linux-x86_64.sh
-       ```
-
-### Step 2: Clone the Repository
-
-1. **Using the Terminal**:
-   - Open a new terminal in VS Code:
-     - Go to the menu bar and select `Terminal` > `New Terminal`.
-   - In the terminal, run:
-     ```bash
-     git clone https://github.com/your-username/your-repository-name.git
-     cd your-repository-name
-     ```
-
-2. **Using GitHub Desktop**:
+2. **Clone the repository**: Next, you need to "clone" your fork, which means making a local copy of the repo on your machine (desktop or laptop). The easiest way to do this is using GitHub Desktop:
    - Download and install [GitHub Desktop](https://desktop.github.com/).
    - Open GitHub Desktop and sign in to your GitHub account.
    - Click on `File` > `Clone repository`.
-   - In the `URL` tab, paste the repository URL and choose the local path where you want to clone the repository.
-   - Click `Clone`.
+   - In the `URL` tab, paste the URL *of your fork* and choose the local path where you want to clone the repository, and click `Clone`.
 
-### Step 3: Create the Conda Environment
+3. **Add the parent repo as a remote repo**: Next, you need to add the parent repo as a *remote repo* so that you can update your fork whenever I add or make changes to the parent. For this, open a terminal in VS Code and run:
+```bash
+git remote add parent https://github.com/arvindsuresh-math/MATH-392-Intro-to-neural-networks.git
+```
+4. **Create a branch for work**: You will often need to add/make changes to your fork. Best practice is to always create a separate *branch* to make changes, and then merge these changes into your `main` branch. For simplicity, I suggest you make only one separate branch at the start of the semester:
+   - In GitHub Desktop, click on `Current Branch` and select `New Branch`.
+   - Name your branch (e.g., `myname-work`) and click `Create Branch`.
 
-1. **Activate Conda**:
-   - Open the terminal in VS Code.
-   - If Conda is not already initialized, run:
-     ```bash
-     conda init
-     ```
-   - Close and reopen the terminal to apply the changes.
+### Create the Conda Environment
 
-2. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
-   - Open the repository in VS Code.
-   - In VS Code, open a new terminal window.
-   - In the terminal, run:
-     ```bash
-     conda env create -f environment.yml
-     ```
+We will be using a bunch of different packages to write code in this course. We will install them in one fell swoop by creating a Conda Environment for our course, as follows. 
 
-3. **Activate the environment**:
-   - In the terminal, run:
-     ```bash
-     conda activate math392
-     ```
+1. **Download and install Miniconda**:
+   - Go to the [Miniconda download page](https://docs.conda.io/en/latest/miniconda.html).
+   - Download the installer for your operating system (Windows or macOS), and run it to complete the installation.
 
-4. **Verify that the environment is set up correctly**:
-   - Open the Jupyter notebook `environment_check.ipynb` in the `Getting started` folder.
-   - Follow the instructions in the notebook to run the cells and verify that all packages are installed correctly.
+2. **Initialize Conda**: Open the terminal in VS Code and run: 
+   ```bash
+   conda init
+   ```
+   Then, close and re-open the terminal to apply the changes. 
+
+3. **Create the environment from the [environment.yml](http://_vscodecontentref_/1) file**:
+   - Open the repository in VS Code, and open a new terminal window.
+   - In the terminal, first run:
+      ```bash
+      conda init
+      ```
+   - Close and re-open the terminal to apply the changes, and then run:
+      ```bash
+      conda env create -f environment.yml
+      ```
+   - Finally, to activate the environment, run:
+      ```bash
+      conda activate math392
+      ```
+   - To verify that the setup worked as expected, open the Jupyter notebook `environment_check.ipynb` in the `Getting started` folder and follow the instructions.
+
+## Managing your fork
+
+### Updating from the parent
+
+I will regularly be adding/changing changes to the parent repo, and it is important to always work with the up-to-date version. Whenever you sit down to work on VS Code, **always start by doing the following**:
+
+1. Open your fork in GitHub Desktop, and make sure that your current branch is set to `main`.
+
+2. Click on `Fetch origin` to fetch the latest changes from the parent repo. 
+
+2. Click on `Branch` > `Merge into current branch` (select `parent/main`) to merge the changes from the parent repo into your local `main` branch.
+
+3. Click on `Push origin` to push the changes to your fork on GitHub (more precisely, to the `main` branch on your fork).
+
+### Making changes to your fork
+
+You will often need to add/make changes to your fork. Remember, every time you sit down to work in VS Code, first update from the parent repo as outline above. Then, do the following:
+
+1. Open your fork in GitHub Desktop, and make sure that your current is set to `myname-work` (i.e. the branch you made for your changes).
+
+2. On VS Code, the bottom-left corner will show the current branch you are working it. Now, go ahead and make your changes to the files in your local repo. These changes are known only to the current branch `myname-work`.
+
+3. Save your changes (called **committing the changes**) as follows:
+   - In GitHub Desktop, you will see the changed files listed in the `Changes` tab.
+   - Add a summary of the changes you made in the `Summary` box.
+   - Click `Commit to myname-work`.
+
+4. Click on `Push origin` to push your changes to your fork on GitHub (more precisely, to the `myname-work` branch on your fork).
+
+5. Finally, to merge these changes into the `main` branch of your fork, click on `Create pull request` on GitHub Desktop. 
+
+## Tips for using Github Copilot
+
+If you want to make use of Github Copilot, there are three ways:
+1. **For short, simple tasks requiring no explanation**: Write a comment explaining (in natural language) what you want to accomplish, and hit enter. When you start typing in the next line (or after a few moments), copilot will give auto-complete suggestions that you can accept by hitting tab.
+
+2. **For somewhat longer tasks, still needing no explanation**:
+Start an inline chat with copilot and ask it to generate code to accomplish what you want. Copilot will generate code in place and typically include comments explaining what each block is doing.
+
+3. **For long, complex tasks requiring explanation**: 
+Use the separate copilot chat to write your prompt. Copilot will automatically explain the code it generates for you (in addition to comments for each code block).
+
