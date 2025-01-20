@@ -1,5 +1,5 @@
 # Repository Structure
-Last updated: Sun Jan 19 16:13:31 MST 2025
+Last updated: Mon Jan 20 12:28:52 MST 2025
 
 ```bash
 .
@@ -9,11 +9,10 @@ Last updated: Sun Jan 19 16:13:31 MST 2025
 │   └── regression
 │       └── house-prices
 ├── getting_started
-├── math392_presentation
-├── math392_syllabus
+├── math392
 └── scripts
 
-10 directories
+9 directories
 
 Files in root directory:
 README.md
