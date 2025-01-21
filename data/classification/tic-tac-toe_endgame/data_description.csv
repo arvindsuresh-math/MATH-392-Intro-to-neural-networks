@@ -1,0 +1,11 @@
+name,role,type,demographic,description,units,missing_values
+class,Target,Categorical,,,,no
+top-left-square,Feature,Categorical,,,,no
+top-middle-square,Feature,Categorical,,,,no
+top-right-square,Feature,Categorical,,,,no
+middle-left-square,Feature,Categorical,,,,no
+middle-middle-square,Feature,Categorical,,,,no
+middle-right-square,Feature,Categorical,,,,no
+bottom-left-square,Feature,Categorical,,,,no
+bottom-middle-square,Feature,Categorical,,,,no
+bottom-right-square,Feature,Categorical,,,,no

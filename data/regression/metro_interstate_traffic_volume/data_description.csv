@@ -1,0 +1,10 @@
+name,role,type,demographic,description,units,missing_values
+holiday,Feature,Categorical,,"US National holidays plus regional holiday, Minnesota State Fair",,no
+temp,Feature,Continuous,,Average temp in kelvin,Kelvin,no
+rain_1h,Feature,Continuous,,Amount in mm of rain that occurred in the hour,mm,no
+snow_1h,Feature,Continuous,,Amount in mm of snow that occurred in the hour,mm,no
+clouds_all,Feature,Integer,,Percentage of cloud cover,%,no
+weather_main,Feature,Categorical,,Short textual description of the current weather,,no
+weather_description,Feature,Categorical,,Longer textual description of the current weather,,no
+date_time,Feature,Date,,Hour of the data collected in local CST time,,no
+traffic_volume,Target,Integer,,Hourly I-94 ATR 301 reported westbound traffic volume,,no

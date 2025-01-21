@@ -1,0 +1,15 @@
+name,role,type,demographic,description,units,missing_values
+class,Target,Categorical,,,,no
+Alcohol,Feature,Continuous,,,,no
+Malicacid,Feature,Continuous,,,,no
+Ash,Feature,Continuous,,,,no
+Alcalinity_of_ash,Feature,Continuous,,,,no
+Magnesium,Feature,Integer,,,,no
+Total_phenols,Feature,Continuous,,,,no
+Flavanoids,Feature,Continuous,,,,no
+Nonflavanoid_phenols,Feature,Continuous,,,,no
+Proanthocyanins,Feature,Continuous,,,,no
+Color_intensity,Feature,Continuous,,,,no
+Hue,Feature,Continuous,,,,no
+0D280_0D315_of_diluted_wines,Feature,Continuous,,,,no
+Proline,Feature,Integer,,,,no

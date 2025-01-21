@@ -1,0 +1,9 @@
+name,role,type,demographic,description,units,missing_values
+No,ID,Integer,,,,no
+X1 transaction date,Feature,Continuous,,"for example, 2013.250=2013 March, 2013.500=2013 June, etc.",,no
+X2 house age,Feature,Continuous,,,year,no
+X3 distance to the nearest MRT station,Feature,Continuous,,,meter,no
+X4 number of convenience stores,Feature,Integer,,number of convenience stores in the living circle on foot,integer,no
+X5 latitude,Feature,Continuous,,"geographic coordinate, latitude",degree,no
+X6 longitude,Feature,Continuous,,"geographic coordinate, longitude",degree,no
+Y house price of unit area,Target,Continuous,,"10000 New Taiwan Dollar/Ping, where Ping is a local unit, 1 Ping = 3.3 meter squared",10000 New Taiwan Dollar/Ping,no

@@ -1,0 +1,10 @@
+name,role,type,demographic,description,units,missing_values
+Cement,Feature,Continuous,,,kg/m^3,no
+Blast Furnace Slag,Feature,Integer,,,kg/m^3,no
+Fly Ash,Feature,Continuous,,,kg/m^3,no
+Water,Feature,Continuous,,,kg/m^3,no
+Superplasticizer,Feature,Continuous,,,kg/m^3,no
+Coarse Aggregate,Feature,Continuous,,,kg/m^3,no
+Fine Aggregate,Feature,Continuous,,,kg/m^3,no
+Age,Feature,Integer,,,day,no
+Concrete compressive strength,Target,Continuous,,,MPa,no
