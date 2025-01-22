@@ -1,5 +1,5 @@
 # Repository Structure
-Last updated: Mon Jan 20 19:13:13 MST 2025
+Last updated: Wed Jan 22 11:28:42 MST 2025
 
 ```bash
 .
@@ -18,10 +18,11 @@ Last updated: Mon Jan 20 19:13:13 MST 2025
 │       ├── presidential_election_popular_vote
 │       └── real_estate_valuation
 ├── getting_started
+├── lectures
 ├── math392
 └── scripts
 
-18 directories
+19 directories
 
 Files in root directory:
 README.md
