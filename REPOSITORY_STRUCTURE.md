@@ -1,5 +1,5 @@
 # Repository Structure
-Last updated: Thu Jan 23 08:50:36 MST 2025
+Last updated: Thu Jan 23 09:16:03 MST 2025
 
 ```bash
 .
@@ -18,8 +18,8 @@ Last updated: Thu Jan 23 08:50:36 MST 2025
 │       ├── presidential_election_popular_vote
 │       └── real_estate_valuation
 ├── getting_started
-├── lectures
 ├── math392
+├── notebooks
 └── scripts
 
 19 directories
