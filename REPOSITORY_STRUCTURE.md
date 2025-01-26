@@ -1,5 +1,5 @@
 # Repository Structure
-Last updated: Thu Jan 23 09:16:03 MST 2025
+Last updated: Sun Jan 26 07:46:38 MST 2025
 
 ```bash
 .
@@ -20,9 +20,10 @@ Last updated: Thu Jan 23 09:16:03 MST 2025
 ├── getting_started
 ├── math392
 ├── notebooks
+│   └── assets
 └── scripts
 
-19 directories
+20 directories
 
 Files in root directory:
 README.md
