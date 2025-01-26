@@ -1,6 +1,6 @@
-name,role,type,demographic,description,units,missing_values
-sepal length,Feature,Continuous,,,cm,no
-sepal width,Feature,Continuous,,,cm,no
-petal length,Feature,Continuous,,,cm,no
-petal width,Feature,Continuous,,,cm,no
-class,Target,Categorical,,"class of iris plant: Iris Setosa, Iris Versicolour, or Iris Virginica",,no
+name,role,type,demographic,description,units,missing_values,new_col_name
+sepal length,Feature,Continuous,,,cm,no,X1
+sepal width,Feature,Continuous,,,cm,no,X2
+petal length,Feature,Continuous,,,cm,no,X3
+petal width,Feature,Continuous,,,cm,no,X4
+class,Target,Categorical,,"class of iris plant: Iris Setosa, Iris Versicolour, or Iris Virginica",,no,Y

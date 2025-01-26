@@ -1,4 +1,4 @@
-sepal length,sepal width,petal length,petal width,class
+X1,X2,X3,X4,Y
 4.4,2.9,1.4,0.2,Iris-setosa
 4.9,2.5,4.5,1.7,Iris-virginica
 6.8,2.8,4.8,1.4,Iris-versicolor

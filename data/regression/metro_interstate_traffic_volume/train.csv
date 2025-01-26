@@ -1,4 +1,4 @@
-holiday,temp,rain_1h,snow_1h,clouds_all,weather_main,weather_description,date_time,traffic_volume
+X1,X2,X3,X4,X5,X6,X7,X8,Y
 ,291.84,0.0,0.0,1,Clear,sky is clear,2017-07-04 03:00:00,440
 ,297.22,0.0,0.0,1,Clear,sky is clear,2017-09-22 03:00:00,370
 ,268.79,0.0,0.0,90,Mist,mist,2018-04-15 06:00:00,490

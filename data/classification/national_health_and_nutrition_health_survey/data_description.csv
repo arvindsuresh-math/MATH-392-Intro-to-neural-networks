@@ -1,11 +1,11 @@
-name,role,type,demographic,description,units,missing_values
-SEQN,ID,Continuous,,Respondent Sequence Number,,no
-age_group,Target,Categorical,Age,Respondent's Age Group (senior/non-senior),,no
-RIDAGEYR,Other,Continuous,Age,Respondent's Age,,no
-RIAGENDR,Feature,Continuous,Gender,Respondent's Gender,,no
-PAQ605,Feature,Continuous,,"If the respondent engages in moderate or vigorous-intensity sports, fitness, or recreational activities in the typical week",,no
-BMXBMI,Feature,Continuous,,Respondent's Body Mass Index,,no
-LBXGLU,Feature,Continuous,,Respondent's Blood Glucose after fasting,,no
-DIQ010,Feature,Continuous,,If the Respondent is diabetic,,no
-LBXGLT,Feature,Continuous,,Respondent's Oral ,,no
-LBXIN,Feature,Continuous,,Respondent's Blood Insulin Levels,,no
+name,role,type,demographic,description,units,missing_values,new_col_name
+SEQN,ID,Continuous,,Respondent Sequence Number,,no,SEQN
+age_group,Target,Categorical,Age,Respondent's Age Group (senior/non-senior),,no,Y
+RIDAGEYR,Other,Continuous,Age,Respondent's Age,,no,RIDAGEYR
+RIAGENDR,Feature,Continuous,Gender,Respondent's Gender,,no,X1
+PAQ605,Feature,Continuous,,"If the respondent engages in moderate or vigorous-intensity sports, fitness, or recreational activities in the typical week",,no,X2
+BMXBMI,Feature,Continuous,,Respondent's Body Mass Index,,no,X3
+LBXGLU,Feature,Continuous,,Respondent's Blood Glucose after fasting,,no,X4
+DIQ010,Feature,Continuous,,If the Respondent is diabetic,,no,X5
+LBXGLT,Feature,Continuous,,Respondent's Oral ,,no,X6
+LBXIN,Feature,Continuous,,Respondent's Blood Insulin Levels,,no,X7

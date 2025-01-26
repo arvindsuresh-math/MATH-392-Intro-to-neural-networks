@@ -1,4 +1,4 @@
-holiday,temp,rain_1h,snow_1h,clouds_all,weather_main,weather_description,date_time
+X1,X2,X3,X4,X5,X6,X7,X8
 ,302.11,9831.3,0.0,75,Rain,very heavy rain,2016-07-11 17:00:00
 ,300.54,0.0,0.0,1,Clear,sky is clear,2015-09-05 11:00:00
 ,277.74,0.0,0.0,1,Clear,sky is clear,2016-04-09 19:00:00

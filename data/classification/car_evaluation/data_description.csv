@@ -1,8 +1,8 @@
-name,role,type,demographic,description,units,missing_values
-buying,Feature,Categorical,,buying price,,no
-maint,Feature,Categorical,,price of the maintenance,,no
-doors,Feature,Categorical,,number of doors,,no
-persons,Feature,Categorical,,capacity in terms of persons to carry,,no
-lug_boot,Feature,Categorical,,the size of luggage boot,,no
-safety,Feature,Categorical,,estimated safety of the car,,no
-class,Target,Categorical,,"evaulation level (unacceptable, acceptable, good, very good)",,no
+name,role,type,demographic,description,units,missing_values,new_col_name
+buying,Feature,Categorical,,buying price,,no,X1
+maint,Feature,Categorical,,price of the maintenance,,no,X2
+doors,Feature,Categorical,,number of doors,,no,X3
+persons,Feature,Categorical,,capacity in terms of persons to carry,,no,X4
+lug_boot,Feature,Categorical,,the size of luggage boot,,no,X5
+safety,Feature,Categorical,,estimated safety of the car,,no,X6
+class,Target,Categorical,,"evaulation level (unacceptable, acceptable, good, very good)",,no,Y

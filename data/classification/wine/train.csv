@@ -1,4 +1,4 @@
-Alcohol,Malicacid,Ash,Alcalinity_of_ash,Magnesium,Total_phenols,Flavanoids,Nonflavanoid_phenols,Proanthocyanins,Color_intensity,Hue,0D280_0D315_of_diluted_wines,Proline,class
+X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,X13,Y
 13.28,1.64,2.84,15.5,110,2.6,2.68,0.34,1.36,4.6,1.09,2.78,880,1
 13.73,1.5,2.7,22.5,101,3.0,3.25,0.29,2.38,5.7,1.19,2.71,1285,1
 13.39,1.77,2.62,16.1,93,2.85,2.94,0.34,1.45,4.8,0.92,3.22,1195,1

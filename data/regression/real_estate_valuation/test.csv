@@ -1,4 +1,4 @@
-X1 transaction date,X2 house age,X3 distance to the nearest MRT station,X4 number of convenience stores,X5 latitude,X6 longitude
+X1,X2,X3,X4,X5,X6
 2013.083,33.0,181.0766,9,24.97697,121.54262
 2012.917,16.9,964.7496,4,24.98872,121.53411
 2012.917,31.9,1146.329,0,24.9492,121.53076

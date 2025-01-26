@@ -5,6 +5,7 @@ import json
 from sklearn.model_selection import train_test_split
 from ucimlrepo import fetch_ucirepo
 
+
 def create_data_from_ucimlrepo(id):
     # fetch dataset from UCI ML repo
     repo = fetch_ucirepo(id=id) 
@@ -27,18 +28,30 @@ def create_data_from_ucimlrepo(id):
     with open(filepath + '/metadata.json', 'w') as f:
         json.dump(meta, f)
 
-    # Save the variable info as a csv file named data_description.csv
-    repo.variables.to_csv(filepath + '/data_description.csv', index=False)
-
     # get data (as pandas dataframes) 
     X = repo.data.features 
     y = repo.data.targets 
+
+    # make a dictionary mapping col names to Xi and Y
+    col_map = {X.columns[i]: f'X{i+1}' for i in range(len(X.columns))}
+    col_map[target_name] = 'Y'
+
+    # add a column with new column names to the variables dataframe
+    vars = repo.variables
+    vars['new_col_name'] = vars['name'].map(lambda x: col_map.get(x, x))
+
+    # Save the variable info as a csv file named data_description.csv
+    repo.variables.to_csv(filepath + '/data_description.csv', index=False)
+
+    #rename the columns of X and y using the col_map
+    X = X.rename(columns=col_map)
+    y = y.rename(columns=col_map)
 
     # split data, use random state 42 for reproducibility
     # to preserve target distribution, stratify on y if classification, else on deciles of y
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, 
-        stratify=y if task == 'classification' else pd.qcut(y[target_name], q=10, labels=False))
+        stratify=y if task == 'classification' else pd.qcut(y['Y'], q=10, labels=False))
 
     # join train sets and test sets into dataframes df_train and df_test
     df_train = pd.concat([X_train, y_train], axis=1)

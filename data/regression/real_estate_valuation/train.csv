@@ -1,4 +1,4 @@
-X1 transaction date,X2 house age,X3 distance to the nearest MRT station,X4 number of convenience stores,X5 latitude,X6 longitude,Y house price of unit area
+X1,X2,X3,X4,X5,X6,Y
 2013.417,35.3,614.1394,7,24.97913,121.53666,33.1
 2013.083,6.2,90.45606,9,24.97433,121.5431,58.0
 2013.5,23.0,3947.945,0,24.94783,121.50243,25.3
