@@ -1,0 +1,7 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/2016333726_2918841290_223132457.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/543634251_2834709167_703308254.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/543634251_3631736535_2444121004.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/543634251_2834709167_536400668.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/543634251_1766404824_92278851.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/720p30/partial_movie_files/TriangleToCircleToSquare/543634251_2834709167_231939266.mp4'
