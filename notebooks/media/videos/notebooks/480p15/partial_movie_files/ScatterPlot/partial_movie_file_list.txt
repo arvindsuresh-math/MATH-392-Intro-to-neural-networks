@@ -1,0 +1,11 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/1185818338_4037716151_223132457.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_4217992463_1683819370.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_3860847391_2452413586.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_2844360058_517159619.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_2400531218_2221769978.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_2844360058_2309501016.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_4036830705_686738857.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_2844360058_872574723.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_650503841_3054165969.mp4'
+file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/notebooks/media/videos/notebooks/480p15/partial_movie_files/ScatterPlot/624642324_2844360058_4216201950.mp4'

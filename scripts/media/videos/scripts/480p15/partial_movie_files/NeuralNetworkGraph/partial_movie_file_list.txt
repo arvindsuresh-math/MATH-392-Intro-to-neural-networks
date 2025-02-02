@@ -1,6 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/480p15/partial_movie_files/NeuralNetworkGraph/1185818338_2259003448_223132457.mp4'
-file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/480p15/partial_movie_files/NeuralNetworkGraph/624642324_2914722286_2023860264.mp4'
-file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/480p15/partial_movie_files/NeuralNetworkGraph/624642324_3010633907_1104060705.mp4'
-file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/480p15/partial_movie_files/NeuralNetworkGraph/624642324_3172787449_337433814.mp4'
-file 'file:/Users/arvindsuresh/Documents/MATH-392-Intro-to-neural-networks/scripts/media/videos/scripts/480p15/partial_movie_files/NeuralNetworkGraph/624642324_2405887830_2255310601.mp4'
