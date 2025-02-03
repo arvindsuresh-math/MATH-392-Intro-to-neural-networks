@@ -1,5 +1,5 @@
 # Repository Structure
-Last updated: Sun Jan 26 07:46:38 MST 2025
+Last updated: Mon Feb  3 10:09:36 MST 2025
 
 ```bash
 .
@@ -20,10 +20,28 @@ Last updated: Sun Jan 26 07:46:38 MST 2025
 ├── getting_started
 ├── math392
 ├── notebooks
-│   └── assets
+│   ├── assets
+│   └── media
+│       ├── Tex
+│       ├── images
+│       │   └── notebooks
+│       ├── jupyter
+│       └── videos
+│           ├── 480p60
+│           │   └── partial_movie_files
+│           │       └── InteractiveLine
+│           └── notebooks
+│               ├── 1080p60
+│               │   └── partial_movie_files
+│               │       └── ScatterPlotWithMovingLineAndParameters
+│               └── 480p15
+│                   └── partial_movie_files
+│                       ├── ScatterPlot
+│                       ├── ScatterPlotWithLine
+│                       └── ScatterPlotWithMovingLineAndParameters
 └── scripts
 
-20 directories
+38 directories
 
 Files in root directory:
 README.md
