@@ -59,10 +59,11 @@ def create_data_from_ucimlrepo(id):
 
     #save df_train and X_test as csv files named train.csv and test.csv
     df_train.to_csv(filepath + '/train.csv', index=False)
-    X_test.to_csv(filepath + '/test.csv', index=False)
+    df_test.to_csv(filepath + f'/test.csv', index=False)
+    # X_test.to_csv(filepath + '/test.csv', index=False)
 
     # save df_test as a csv file named name_test_private.csv; will be deleted from repo, copy maintained locally by arvind
-    df_test.to_csv(filepath + f'/{name}_test_private.csv', index=False)
+    # df_test.to_csv(filepath + f'/{name}_test_private.csv', index=False)
 
 idx = [53, # iris
          477, # real estate evaluation
