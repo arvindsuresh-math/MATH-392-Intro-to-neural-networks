@@ -14,10 +14,10 @@
 | 11     | 02/26  | Perceptron                                                              |
 | 12     | 03/03  | Logistic regression (binary and multi-class)                            |
 | 13     | 03/05  | Entropy (surprisal, entropy, cross-entropy)                             |
-| 14     | 03/17  | Decision trees (Gini impurity, decision tree classifiers)               |
-| 15     | 03/19  | ML project aspects (bias-variance, cross-validation, regularization)    |
-| 16     | 03/24  | Multi-layer perceptrons (high-level overview, tensors, PyTorch)         |
-| 17     | 03/26  | Gradient descent (manual implementation of logistic/linear regression)  |
+| 14     | 03/17  | Gradient descent (implementation for logistic/linear regression)        |
+| 15     | 03/19  | Multi-layer perceptrons (high-level overview, tensors, PyTorch)         |
+| 16     | 03/24  | ML project aspects I (bias-variance, cross-validation, regularization)  |
+| 17     | 03/26  | ML project aspects II (feature engineering, KPIs, hyperparameter tuning)|
 | 18     | 03/31  | Backpropogation (implementing Karpathy's micrograd)                     |
 |        |        | Project 1 due                                                           |
 | 19     | 04/02  | Fine-tuning I                                                           |
