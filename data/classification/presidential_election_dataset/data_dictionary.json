@@ -1,0 +1,710 @@
+{
+  "year": {
+    "description": "Year of presidential popular election",
+    "category": "election metadata"
+  },
+  "gisjoin": {
+    "description": "Geographic identifier for joining with other datasets",
+    "category": "geographic identifier"
+  },
+  "state": {
+    "description": "State name",
+    "category": "geographic identifier"
+  },
+  "county": {
+    "description": "County name",
+    "category": "geographic identifier"
+  },
+  "persons_total": {
+    "description": "Persons: Total",
+    "category": "population total"
+  },
+  "persons_male": {
+    "description": "Persons: Male",
+    "category": "population ~ sex"
+  },
+  "persons_female": {
+    "description": "Persons: Female",
+    "category": "population ~ sex"
+  },
+  "persons_hispanic": {
+    "description": "Persons: Hispanic or Latino",
+    "category": "population ~ ethnicity"
+  },
+  "households_total": {
+    "description": "Households: Total",
+    "category": "household total"
+  },
+  "male_never_married": {
+    "description": "Males ~ never married",
+    "category": "sex ~ marital status"
+  },
+  "male_married": {
+    "description": "Males ~ currently married",
+    "category": "sex ~ marital status"
+  },
+  "male_separated": {
+    "description": "Males ~ separated from spouse",
+    "category": "sex ~ marital status" 
+  },
+  "male_widowed": {
+    "description": "Males ~ widowed",
+    "category": "sex ~ marital status"
+  },
+  "male_divorced": {
+    "description": "Males ~ divorced",
+    "category": "sex ~ marital status"
+  },
+  "female_never_married": {
+    "description": "Females ~ never married",
+    "category": "sex ~ marital status"
+  },
+  "female_married": {
+    "description": "Females ~ currently married",
+    "category": "sex ~ marital status"
+  },
+  "female_separated": {
+    "description": "Females ~ separated from spouse",
+    "category": "sex ~ marital status"
+  },
+  "female_widowed": {
+    "description": "Females ~ widowed",
+    "category": "sex ~ marital status"
+  },
+  "female_divorced": {
+    "description": "Females ~ divorced",
+    "category": "sex ~ marital status"
+  },
+  "persons_native": {
+    "description": "Persons: Native",
+    "category": "population ~ nativity"
+  },
+  "persons_foreign_born": {
+    "description": "Persons: Foreign born",
+    "category": "population ~ nativity"
+  },
+  "male_18_24_less_than_9th": {
+    "description": "Males ~ 18-24 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_some_hs": {
+    "description": "Males ~ 18-24 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_hs_grad": {
+    "description": "Males ~ 18-24 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_some_college": {
+    "description": "Males ~ 18-24 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_associates": {
+    "description": "Males ~ 18-24 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_bachelors": {
+    "description": "Males ~ 18-24 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_18_24_graduate": {
+    "description": "Males ~ 18-24 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_less_than_9th": {
+    "description": "Males ~ 25-34 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_some_hs": {
+    "description": "Males ~ 25-34 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_hs_grad": {
+    "description": "Males ~ 25-34 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_some_college": {
+    "description": "Males ~ 25-34 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_associates": {
+    "description": "Males ~ 25-34 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_bachelors": {
+    "description": "Males ~ 25-34 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_25_34_graduate": {
+    "description": "Males ~ 25-34 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_less_than_9th": {
+    "description": "Males ~ 35-44 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_some_hs": {
+    "description": "Males ~ 35-44 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_hs_grad": {
+    "description": "Males ~ 35-44 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_some_college": {
+    "description": "Males ~ 35-44 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_associates": {
+    "description": "Males ~ 35-44 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_bachelors": {
+    "description": "Males ~ 35-44 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_35_44_graduate": {
+    "description": "Males ~ 35-44 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_less_than_9th": {
+    "description": "Males ~ 45-64 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_some_hs": {
+    "description": "Males ~ 45-64 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_hs_grad": {
+    "description": "Males ~ 45-64 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_some_college": {
+    "description": "Males ~ 45-64 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_associates": {
+    "description": "Males ~ 45-64 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_bachelors": {
+    "description": "Males ~ 45-64 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_45_64_graduate": {
+    "description": "Males ~ 45-64 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_less_than_9th": {
+    "description": "Males ~ 65 years and over ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_some_hs": {
+    "description": "Males ~ 65 years and over ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_hs_grad": {
+    "description": "Males ~ 65 years and over ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_some_college": {
+    "description": "Males ~ 65 years and over ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_associates": {
+    "description": "Males ~ 65 years and over ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_bachelors": {
+    "description": "Males ~ 65 years and over ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "male_65plus_graduate": {
+    "description": "Males ~ 65 years and over ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_less_than_9th": {
+    "description": "Females ~ 18-24 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_some_hs": {
+    "description": "Females ~ 18-24 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_hs_grad": {
+    "description": "Females ~ 18-24 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_some_college": {
+    "description": "Females ~ 18-24 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_associates": {
+    "description": "Females ~ 18-24 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_bachelors": {
+    "description": "Females ~ 18-24 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_18_24_graduate": {
+    "description": "Females ~ 18-24 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_less_than_9th": {
+    "description": "Females ~ 25-34 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_some_hs": {
+    "description": "Females ~ 25-34 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_hs_grad": {
+    "description": "Females ~ 25-34 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_some_college": {
+    "description": "Females ~ 25-34 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_associates": {
+    "description": "Females ~ 25-34 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_bachelors": {
+    "description": "Females ~ 25-34 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_25_34_graduate": {
+    "description": "Females ~ 25-34 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_less_than_9th": {
+    "description": "Females ~ 35-44 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_some_hs": {
+    "description": "Females ~ 35-44 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_hs_grad": {
+    "description": "Females ~ 35-44 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_some_college": {
+    "description": "Females ~ 35-44 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_associates": {
+    "description": "Females ~ 35-44 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_bachelors": {
+    "description": "Females ~ 35-44 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_35_44_graduate": {
+    "description": "Females ~ 35-44 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_less_than_9th": {
+    "description": "Females ~ 45-64 years old ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_some_hs": {
+    "description": "Females ~ 45-64 years old ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_hs_grad": {
+    "description": "Females ~ 45-64 years old ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_some_college": {
+    "description": "Females ~ 45-64 years old ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_associates": {
+    "description": "Females ~ 45-64 years old ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_bachelors": {
+    "description": "Females ~ 45-64 years old ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_45_64_graduate": {
+    "description": "Females ~ 45-64 years old ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_less_than_9th": {
+    "description": "Females ~ 65 years and over ~ less than 9th grade education",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_some_hs": {
+    "description": "Females ~ 65 years and over ~ some high school but no diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_hs_grad": {
+    "description": "Females ~ 65 years and over ~ high school diploma",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_some_college": {
+    "description": "Females ~ 65 years and over ~ some college but no degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_associates": {
+    "description": "Females ~ 65 years and over ~ associate's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_bachelors": {
+    "description": "Females ~ 65 years and over ~ bachelor's degree",
+    "category": "sex ~ age ~ education"
+  },
+  "female_65plus_graduate": {
+    "description": "Females ~ 65 years and over ~ graduate or professional degree",
+    "category": "sex ~ age ~ education"
+  },
+  "labor_force_total": {
+    "description": "Total labor force",
+    "category": "labor force"
+  },
+  "labor_force_armed": {
+    "description": "Armed forces labor",
+    "category": "labor force"
+  },
+  "labor_force_civilian": {
+    "description": "Civilian labor force",
+    "category": "labor force"
+  },
+  "labor_force_employed": {
+    "description": "Employed civilians in labor force",
+    "category": "labor force"
+  },
+  "labor_force_unemployed": {
+    "description": "Unemployed civilians in labor force",
+    "category": "labor force"
+  },
+  "not_in_labor_force": {
+    "description": "Population not in labor force",
+    "category": "labor force"
+  },
+  "households_income_under_10k": {
+    "description": "Households ~ income under $10,000",
+    "category": "household ~ income"
+  },
+  "households_income_10k_15k": {
+    "description": "Households ~ income $10,000 to $14,999",
+    "category": "household ~ income"
+  },
+  "households_income_15k_25k": {
+    "description": "Households ~ income $15,000 to $24,999",
+    "category": "household ~ income"
+  },
+  "households_income_25k_plus": {
+    "description": "Households ~ income $25,000 or more",
+    "category": "household ~ income"
+  },
+  "median_household_income": {
+    "description": "Median income in previous year: Households",
+    "category": "household ~ income"
+  },
+  "per_capita_income": {
+    "description": "Per capita income in previous year",
+    "category": "income"
+  },
+  "persons_below_poverty": {
+    "description": "Persons: Poverty status is determined ~ Income below poverty level",
+    "category": "poverty"
+  },
+  "female_18_24_aian": {
+    "description": "Females ~ 18-24 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_asian": {
+    "description": "Females ~ 18-24 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_black": {
+    "description": "Females ~ 18-24 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_multi": {
+    "description": "Females ~ 18-24 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_nhpi": {
+    "description": "Females ~ 18-24 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_other": {
+    "description": "Females ~ 18-24 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_18_24_white": {
+    "description": "Females ~ 18-24 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_aian": {
+    "description": "Females ~ 25-34 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_asian": {
+    "description": "Females ~ 25-34 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_black": {
+    "description": "Females ~ 25-34 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_multi": {
+    "description": "Females ~ 25-34 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_nhpi": {
+    "description": "Females ~ 25-34 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_other": {
+    "description": "Females ~ 25-34 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_25_34_white": {
+    "description": "Females ~ 25-34 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_aian": {
+    "description": "Females ~ 35-44 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_asian": {
+    "description": "Females ~ 35-44 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_black": {
+    "description": "Females ~ 35-44 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_multi": {
+    "description": "Females ~ 35-44 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_nhpi": {
+    "description": "Females ~ 35-44 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_other": {
+    "description": "Females ~ 35-44 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_35_44_white": {
+    "description": "Females ~ 35-44 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_aian": {
+    "description": "Females ~ 45-64 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_asian": {
+    "description": "Females ~ 45-64 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_black": {
+    "description": "Females ~ 45-64 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_multi": {
+    "description": "Females ~ 45-64 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_nhpi": {
+    "description": "Females ~ 45-64 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_other": {
+    "description": "Females ~ 45-64 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_45_64_white": {
+    "description": "Females ~ 45-64 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_aian": {
+    "description": "Females ~ 65 years and over ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_asian": {
+    "description": "Females ~ 65 years and over ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_black": {
+    "description": "Females ~ 65 years and over ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_multi": {
+    "description": "Females ~ 65 years and over ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_nhpi": {
+    "description": "Females ~ 65 years and over ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_other": {
+    "description": "Females ~ 65 years and over ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "female_65plus_white": {
+    "description": "Females ~ 65 years and over ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_aian": {
+    "description": "Males ~ 18-24 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_asian": {
+    "description": "Males ~ 18-24 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_black": {
+    "description": "Males ~ 18-24 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_multi": {
+    "description": "Males ~ 18-24 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_nhpi": {
+    "description": "Males ~ 18-24 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_other": {
+    "description": "Males ~ 18-24 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_18_24_white": {
+    "description": "Males ~ 18-24 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_aian": {
+    "description": "Males ~ 25-34 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_asian": {
+    "description": "Males ~ 25-34 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_black": {
+    "description": "Males ~ 25-34 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_multi": {
+    "description": "Males ~ 25-34 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_nhpi": {
+    "description": "Males ~ 25-34 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_other": {
+    "description": "Males ~ 25-34 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_25_34_white": {
+    "description": "Males ~ 25-34 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_aian": {
+    "description": "Males ~ 35-44 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_asian": {
+    "description": "Males ~ 35-44 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_black": {
+    "description": "Males ~ 35-44 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_multi": {
+    "description": "Males ~ 35-44 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_nhpi": {
+    "description": "Males ~ 35-44 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_other": {
+    "description": "Males ~ 35-44 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_35_44_white": {
+    "description": "Males ~ 35-44 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_aian": {
+    "description": "Males ~ 45-64 years old ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_asian": {
+    "description": "Males ~ 45-64 years old ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_black": {
+    "description": "Males ~ 45-64 years old ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_multi": {
+    "description": "Males ~ 45-64 years old ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_nhpi": {
+    "description": "Males ~ 45-64 years old ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_other": {
+    "description": "Males ~ 45-64 years old ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_45_64_white": {
+    "description": "Males ~ 45-64 years old ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_aian": {
+    "description": "Males ~ 65 years and over ~ American Indian and Alaska Native Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_asian": {
+    "description": "Males ~ 65 years and over ~ Asian Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_black": {
+    "description": "Males ~ 65 years and over ~ Black or African American Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_multi": {
+    "description": "Males ~ 65 years and over ~ Two or More Races",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_nhpi": {
+    "description": "Males ~ 65 years and over ~ Native Hawaiian and Other Pacific Islander Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_other": {
+    "description": "Males ~ 65 years and over ~ Some Other Race Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "male_65plus_white": {
+    "description": "Males ~ 65 years and over ~ White Alone",
+    "category": "sex ~ age ~ race"
+  },
+  "democrat": {
+    "description": "Votes for Democratic presidential candidate",
+    "category": "target"
+  },
+  "other": {
+    "description": "Votes for other presidential candidates",
+    "category": "target"
+  },
+  "republican": {
+    "description": "Votes for Republican presidential candidate",
+    "category": "target"
+  }
+}
