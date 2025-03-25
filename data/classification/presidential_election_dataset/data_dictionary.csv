@@ -1,13 +1,13 @@
 feature,description,category
-year,Year of presidential popular election,election metadata
-gisjoin,Geographic identifier for joining with other datasets,geographic identifier
-state,State name,geographic identifier
-county,County name,geographic identifier
-persons_total,Persons: Total,population total
-persons_male,Persons: Male,population ~ sex
-persons_female,Persons: Female,population ~ sex
-persons_hispanic,Persons: Hispanic or Latino,population ~ ethnicity
-households_total,Households: Total,household total
+year,Year of presidential popular election,year
+gisjoin,Geographic identifier for joining with other datasets,id
+state,State name,id
+county,County name,id
+persons_total,Persons: Total,Persons: total
+persons_male,Persons: Male,sex
+persons_female,Persons: Female,sex
+persons_hispanic,Persons: Hispanic or Latino,ethnicity
+households_total,Households: Total,household
 male_never_married,Males ~ never married,sex ~ marital status
 male_married,Males ~ currently married,sex ~ marital status
 male_separated,Males ~ separated from spouse,sex ~ marital status
@@ -18,8 +18,8 @@ female_married,Females ~ currently married,sex ~ marital status
 female_separated,Females ~ separated from spouse,sex ~ marital status
 female_widowed,Females ~ widowed,sex ~ marital status
 female_divorced,Females ~ divorced,sex ~ marital status
-persons_native,Persons: Native,population ~ nativity
-persons_foreign_born,Persons: Foreign born,population ~ nativity
+persons_native,Persons: Native,nativity
+persons_foreign_born,Persons: Foreign born,nativity
 male_18_24_less_than_9th,Males ~ 18-24 years old ~ less than 9th grade education,sex ~ age ~ education
 male_18_24_some_hs,Males ~ 18-24 years old ~ some high school but no diploma,sex ~ age ~ education
 male_18_24_hs_grad,Males ~ 18-24 years old ~ high school diploma,sex ~ age ~ education
@@ -96,13 +96,13 @@ labor_force_civilian,Civilian labor force,labor force
 labor_force_employed,Employed civilians in labor force,labor force
 labor_force_unemployed,Unemployed civilians in labor force,labor force
 not_in_labor_force,Population not in labor force,labor force
-households_income_under_10k,"Households ~ income under $10,000",household ~ income
-households_income_10k_15k,"Households ~ income $10,000 to $14,999",household ~ income
-households_income_15k_25k,"Households ~ income $15,000 to $24,999",household ~ income
-households_income_25k_plus,"Households ~ income $25,000 or more",household ~ income
-median_household_income,Median income in previous year: Households,household ~ income
+households_income_under_10k,"Households ~ income under $10,000",household
+households_income_10k_15k,"Households ~ income $10,000 to $14,999",household
+households_income_15k_25k,"Households ~ income $15,000 to $24,999",household
+households_income_25k_plus,"Households ~ income $25,000 or more",household
+median_household_income,Median income in previous year: Households,household
 per_capita_income,Per capita income in previous year,income
-persons_below_poverty,Persons: Poverty status is determined ~ Income below poverty level,poverty
+persons_below_poverty,Persons: Income below poverty level,poverty
 female_18_24_aian,Females ~ 18-24 years old ~ American Indian and Alaska Native Alone,sex ~ age ~ race
 female_18_24_asian,Females ~ 18-24 years old ~ Asian Alone,sex ~ age ~ race
 female_18_24_black,Females ~ 18-24 years old ~ Black or African American Alone,sex ~ age ~ race
@@ -176,3 +176,4 @@ male_65plus_white,Males ~ 65 years and over ~ White Alone,sex ~ age ~ race
 democrat,Votes for Democratic presidential candidate,target
 other,Votes for other presidential candidates,target
 republican,Votes for Republican presidential candidate,target
+land_area_sqkm,Land area in square kilometers,area
