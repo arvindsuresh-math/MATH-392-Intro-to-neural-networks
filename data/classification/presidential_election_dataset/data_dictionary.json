@@ -706,5 +706,9 @@
   "republican": {
     "description": "Votes for Republican presidential candidate",
     "category": "target"
+  },
+  "land_area_sqkm": {
+    "description": "Land area in square kilometers",
+    "category": "area"
   }
 }
