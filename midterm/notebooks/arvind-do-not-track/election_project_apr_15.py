@@ -94,10 +94,10 @@ else:
     print("Using CPU device")
 
 # --- Default Training Hyperparameters ---
-BATCH_SIZE: int = 50
-MAX_CV_EPOCHS: int = 300 # Max epochs for early stopping during CV
-PATIENCE: int = 15      # Patience for early stopping during CV
-FINAL_TRAIN_EPOCHS: int = 100 # Fixed epochs for final training
+BATCH_SIZE: int = 64
+MAX_CV_EPOCHS: int = 150 # Max epochs for early stopping during CV
+PATIENCE: int = 20      # Patience for early stopping during CV
+FINAL_TRAIN_EPOCHS: int = 300 # Fixed epochs for final training
 OPTIMIZER_CHOICE: Type[optim.Optimizer] = optim.AdamW # Default optimizer
 
 # --- Default Hyperparameter Grids for CV ---
@@ -210,7 +210,6 @@ class RidgeModel:
     """Handles Ridge Regression CV, training, loading, and evaluation."""
     MODEL_NAME = "ridge"
     # Note: Ridge uses Mean Squared Error for CV, not weighted cross-entropy.
-    # The evaluate method will also report MSE, but can calculate weighted CE post-hoc.
 
     def __init__(self):
         """Initializes the RidgeModel handler."""
@@ -309,52 +308,101 @@ class RidgeModel:
         print("Ridge model loaded successfully.")
         return self.model
 
-    def evaluate(self, data_loader: DataLoader) -> Dict[str, float]:
-        """Evaluates the trained Ridge model on a given DataLoader."""
-        print(f"Evaluating {self.MODEL_NAME.upper()}...")
-        if self.model is None:
-            print("Error: Model not trained or loaded. Cannot evaluate.")
-            return {}
+    def evaluate(self,
+                 test_data_suffix: str,
+                 data_handler: DataHandler
+                 ) -> Tuple[np.ndarray, float]:
+        """
+        Evaluates the trained Ridge model on a specified test dataset, saves
+        county-level raw predictions to CSV, calculates an approximate aggregate
+        cross-entropy loss after applying Softmax to the aggregate predictions,
+        and returns the Softmax-normalized aggregate prediction vector and the CE loss.
+        (NO ERROR HANDLING)
 
-        all_features = []
-        all_targets = []
-        all_weights = []
-        # We need to reconstruct the full dataset from the loader for sklearn
-        for features, targets, weights in data_loader:
-            all_features.append(features.cpu().numpy())
-            all_targets.append(targets.cpu().numpy())
-            all_weights.append(weights.cpu().numpy())
+        Calculation Steps:
+        1. Load the entire test dataset (features, targets, weights) specified
+           by `test_data_suffix` into NumPy arrays.
+        2. Use the trained Ridge model to predict raw scores for each county.
+        3. Save the county-level raw predictions `y_pred_raw` to a CSV file.
+        4. Calculate the Aggregate Predicted Raw Scores by computing the
+           weighted sum of county-level raw scores:
+           AggPredRaw = sum_over_counties_C ( P(C) * prediction_raw_C )
+        5. Calculate the Aggregate True Distribution similarly using true targets:
+           AggTrue = sum_over_counties_C ( P(C) * target_C )
+        6. Apply the Softmax function to the Aggregate Predicted Raw Scores to
+           convert them into a probability distribution (AggPredSoftmax).
+        7. Compute the cross-entropy between AggTrue and AggPredSoftmax:
+           AggCE = - sum_over_classes_k ( AggTrue_k * log(AggPredSoftmax_k) )
+        8. Return the Softmax-normalized aggregate prediction (as NumPy array) and the
+           aggregate cross-entropy loss (as float).
 
-        X_test = np.concatenate(all_features, axis=0)
-        y_test = np.concatenate(all_targets, axis=0)
-        wts_test = np.concatenate(all_weights, axis=0).squeeze() # Ensure 1D
+        Args:
+            test_data_suffix (str): The suffix identifying the test dataset.
+            data_handler (DataHandler): An instance of the DataHandler class.
 
-        y_pred = self.model.predict(X_test)
+        Returns:
+            Tuple[np.ndarray, float]: A tuple containing:
+                - aggregate_prediction_softmax (np.ndarray): Vector of predicted national
+                  vote shares after Softmax (shape: [output_dim]).
+                - aggregate_cross_entropy (float): The calculated CE loss.
+        """
+        # print(f"Evaluating {self.MODEL_NAME.upper()} on '{test_data_suffix}' with Aggregate Cross-Entropy (CPU)...")
 
-        # Calculate Weighted MSE (primary metric for Ridge in this setup)
-        weighted_mse = mean_squared_error(y_test, y_pred, sample_weight=wts_test)
-        unweighted_mse = mean_squared_error(y_test, y_pred)
+        # --- All computations use NumPy (implicitly CPU) ---
+        # Assume self.model exists and is loaded/trained before calling evaluate
 
-        # Calculate weighted cross-entropy post-hoc for comparison
-        # Note: Ridge doesn't guarantee outputs sum to 1 or are positive.
-        # Apply softmax to normalize outputs before calculating CE.
-        y_pred_tensor = torch.tensor(y_pred, dtype=torch.float32)
-        y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
-        wts_test_tensor = torch.tensor(wts_test, dtype=torch.float32).unsqueeze(1) # Add dim for loss func
+        # 1. Load the entire test dataset into NumPy arrays
+        # print(f"Loading test data for suffix: {test_data_suffix}")
+        X_pd, y_pd, wts_pd = data_handler.load_raw_data(test_data_suffix)
 
-        # Apply softmax to make predictions resemble probabilities
-        y_pred_probs = torch.softmax(y_pred_tensor, dim=1)
+        X_test_np = X_pd.values
+        y_test_np = y_pd.values # Shape: [num_samples, output_dim]
+        wts_test_np = wts_pd.values # Shape: [num_samples, 1]
 
-        weighted_ce = weighted_cross_entropy_loss(y_pred_probs, y_test_tensor, wts_test_tensor).item()
+        # print(f"Test data loaded: {X_test_np.shape[0]} samples.")
 
-        metrics = {
-            'weighted_mse': weighted_mse,
-            'unweighted_mse': unweighted_mse,
-            'weighted_cross_entropy_approx': weighted_ce # Approximate CE after softmax
-        }
-        print(f"Evaluation complete. Metrics: {metrics}")
-        return metrics
+        # 2. Use the trained Ridge model to predict raw scores
+        y_pred_raw_np = self.model.predict(X_test_np) # Shape: [num_samples, output_dim]
 
+        # 3. Save county-level raw predictions
+        pred_df = pd.DataFrame(y_pred_raw_np, columns=y_pd.columns) # Use target column names
+        pred_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_{test_data_suffix}_predictions.csv")
+        pred_df.to_csv(pred_save_path, index=False)
+        # print(f"  County-level raw predictions saved to: {pred_save_path}")
+
+        # 4. Calculate Aggregate Predicted Raw Scores
+        agg_pred_raw_np = (wts_test_np * y_pred_raw_np).sum(axis=0) # Shape: [output_dim]
+
+        # 5. Calculate Aggregate True Distribution
+        agg_true_np = (wts_test_np * y_test_np).sum(axis=0) # Shape: [output_dim]
+
+        # --- Final Metric Computation ---
+        # Use torch for softmax and CE calculation for consistency
+        cpu_device = torch.device("cpu")
+        agg_pred_raw_tensor = torch.tensor(agg_pred_raw_np, dtype=torch.float32, device=cpu_device)
+        agg_true_tensor = torch.tensor(agg_true_np, dtype=torch.float32, device=cpu_device)
+
+        # 6. Apply Softmax to aggregate raw predictions
+        agg_pred_softmax_tensor = torch.softmax(agg_pred_raw_tensor, dim=0)
+
+        # Clamp probabilities
+        epsilon = 1e-9
+        agg_pred_softmax_clamped = torch.clamp(agg_pred_softmax_tensor, min=epsilon)
+
+        # 7. Calculate cross-entropy between true and softmax predictions
+        aggregate_ce_tensor = -torch.sum(agg_true_tensor * torch.log(agg_pred_softmax_clamped))
+        aggregate_ce = aggregate_ce_tensor.item()
+
+        # Prepare return values
+        aggregate_prediction_softmax_np = agg_pred_softmax_tensor.numpy()
+
+        # Display the resulting aggregate distributions
+        print(f"  Aggregate True Distribution: {agg_true_np}")
+        print(f"  Aggregate Predicted Distribution (Softmax): {aggregate_prediction_softmax_np}")
+        print(f"  Aggregate Cross-Entropy: {aggregate_ce:.6f}")
+
+        # 8. Return Softmax-normalized aggregate prediction and loss
+        return aggregate_prediction_softmax_np, aggregate_ce
 
 # =============================================================================
 # 5. BaseNNModel Class (Abstract Base Class for PyTorch Models)
@@ -647,48 +695,98 @@ class BaseNNModel(ABC):
         print(f"{self.MODEL_NAME} model loaded successfully.")
         return self.model
 
-    def evaluate(self, test_loader: DataLoader) -> Dict[str, float]:
-        """Evaluates the trained NN model on the test dataset."""
-        print(f"Evaluating {self.MODEL_NAME.upper()}...")
-        if self.model is None:
-            print("Error: Model not trained or loaded. Cannot evaluate.")
-            return {}
+    def evaluate(self,
+                 test_data_suffix: str,
+                 data_handler: DataHandler
+                 ) -> Tuple[np.ndarray, float]:
+        """
+        Evaluates the trained NN model on a specified test dataset, saves county-level
+        predictions to CSV, and returns the aggregate national prediction vector
+        and the aggregate cross-entropy loss. (NO ERROR HANDLING)
 
+        Calculation Steps:
+        1. Load the entire test dataset (features, targets, weights) specified
+           by `test_data_suffix` into CPU tensors.
+        2. Perform a single forward pass of the model (on CPU) on all test
+           features to get county-level predictions (probability distributions).
+        3. Save the county-level predictions `y_pred` to a CSV file.
+        4. Calculate the Aggregate Predicted Distribution by computing the
+           weighted sum of county-level predictions:
+           AggPred = sum_over_counties_C ( P(C) * prediction_C )
+        5. Calculate the Aggregate True Distribution similarly using true targets:
+           AggTrue = sum_over_counties_C ( P(C) * target_C )
+        6. Compute the cross-entropy between these two aggregate distributions:
+           AggCE = - sum_over_classes_k ( AggTrue_k * log(AggPred_k) )
+        7. Return the aggregate predicted distribution (as NumPy array) and the
+           aggregate cross-entropy loss (as float).
+
+        Args:
+            test_data_suffix (str): The suffix identifying the test dataset.
+            data_handler (DataHandler): An instance of the DataHandler class.
+
+        Returns:
+            Tuple[np.ndarray, float]: A tuple containing:
+                - aggregate_prediction (np.ndarray): Vector of predicted national
+                  vote shares (shape: [output_dim]).
+                - aggregate_cross_entropy (float): The calculated CE loss.
+        """
+        # print(f"Evaluating {self.MODEL_NAME.upper()} on '{test_data_suffix}' with Aggregate Cross-Entropy (CPU)...")
+
+        # --- Force CPU ---
+        cpu_device = torch.device("cpu")
+        # Assume self.model exists and is loaded/trained before calling evaluate
+        self.model.to(cpu_device) # Move model to CPU for evaluation
+
+        # 1. Load the entire test dataset directly to CPU tensors
+        # print(f"Loading test data for suffix: {test_data_suffix}")
+        X_pd, y_pd, wts_pd = data_handler.load_raw_data(test_data_suffix)
+
+        # Convert pandas DataFrames to PyTorch tensors on CPU
+        X_test = torch.tensor(X_pd.values, dtype=torch.float32, device=cpu_device)
+        y_test = torch.tensor(y_pd.values, dtype=torch.float32, device=cpu_device)
+        wts_test = torch.tensor(wts_pd.values, dtype=torch.float32, device=cpu_device)
+
+        # print(f"Test data loaded: {X_test.shape[0]} samples.")
+
+        # Ensure model is in evaluation mode
         self.model.eval()
-        total_loss = 0.0
-        total_mse = 0.0
-        num_batches = 0
 
+        # Disable gradient calculations
         with torch.no_grad():
-            for features, targets, weights in test_loader:
-                features, targets, weights = features.to(DEVICE), targets.to(DEVICE), weights.to(DEVICE)
-                outputs = self.model(features) # Should be probabilities from Softmax
+            # 2. Perform forward pass on the entire test set (on CPU)
+            y_pred_tensor = self.model(X_test) # Shape: [num_samples, output_dim]
 
-                # Calculate Weighted Cross-Entropy Loss
-                loss = BaseNNModel.weighted_cross_entropy_loss(outputs, targets, weights)
-                total_loss += loss.item()
+            # 3. Save county-level predictions
+            y_pred_np = y_pred_tensor.numpy() # Convert predictions to NumPy array
+            pred_df = pd.DataFrame(y_pred_np, columns=y_pd.columns) # Use target column names
+            pred_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_{test_data_suffix}_predictions.csv")
+            pred_df.to_csv(pred_save_path, index=False)
+            # print(f"  County-level predictions saved to: {pred_save_path}")
 
-                # Calculate Weighted Mean Squared Error
-                # Ensure weights are broadcastable for MSE calculation if needed
-                # PyTorch MSE doesn't directly support sample weights, do it manually
-                batch_mse = ((outputs - targets)**2).sum(dim=1, keepdim=True) # Sum over classes
-                weighted_batch_mse = (batch_mse * weights).sum()
-                total_batch_weight = weights.sum()
+            # 4. Calculate Aggregate Predicted Distribution
+            agg_pred_dist = (wts_test * y_pred_tensor).sum(dim=0) # Shape: [output_dim]
 
-                # Accumulate weighted sum of squared errors and total weight
-                total_mse += weighted_batch_mse.item()
-                num_batches += 1 # Count batches for CE averaging
+            # 5. Calculate Aggregate True Distribution
+            agg_true_dist = (wts_test * y_test).sum(dim=0) # Shape: [output_dim]
 
-        avg_loss = total_loss / num_batches
-        avg_mse = total_mse / len(test_loader.dataset) # Average MSE over all samples
+            # --- Final Metric Computation ---
+            epsilon = 1e-9
+            agg_pred_dist_clamped = torch.clamp(agg_pred_dist, min=epsilon)
 
-        metrics = {
-            'weighted_cross_entropy': avg_loss,
-            'weighted_mse': avg_mse
-        }
-        print(f"Evaluation complete. Metrics: {metrics}")
-        return metrics
+            # 6. Calculate cross-entropy between the two aggregate distributions
+            aggregate_ce_tensor = -torch.sum(agg_true_dist * torch.log(agg_pred_dist_clamped))
+            aggregate_ce = aggregate_ce_tensor.item()
 
+            # Prepare return values
+            aggregate_prediction_np = agg_pred_dist.numpy() # Return the unclamped version
+
+            # Display the resulting aggregate distributions
+            # print(f"  Aggregate True Distribution: {agg_true_dist.numpy()}")
+            # print(f"  Aggregate Predicted Distribution: {aggregate_prediction_np}")
+            # print(f"  Aggregate Cross-Entropy: {aggregate_ce:.6f}")
+
+        # 7. Return aggregate prediction and loss
+        return aggregate_prediction_np, aggregate_ce
 
 # =============================================================================
 # 6. SoftmaxModel Class
@@ -715,7 +813,6 @@ class SoftmaxModel(BaseNNModel):
         """Builds the Softmax Regression network."""
         # Softmax doesn't have structural hyperparameters in this setup
         return self._SoftmaxNet(input_dim, output_dim)
-
 
 # =============================================================================
 # 7. MLP1Model Class
@@ -747,7 +844,6 @@ class MLP1Model(BaseNNModel):
         n_hidden = int(params['n_hidden']) # Ensure integer type
         dropout_rate = params['dropout_rate']
         return self._MLP1Net(input_dim, output_dim, n_hidden, dropout_rate)
-
 
 # =============================================================================
 # 8. MLP2Model Class
@@ -783,7 +879,6 @@ class MLP2Model(BaseNNModel):
         shared_hidden_size = int(params['shared_hidden_size']) # Ensure integer type
         dropout_rate = params['dropout_rate']
         return self._MLP2Net(input_dim, output_dim, shared_hidden_size, dropout_rate)
-
 
 # =============================================================================
 # End of Script (Ready for import and use in a notebook)
