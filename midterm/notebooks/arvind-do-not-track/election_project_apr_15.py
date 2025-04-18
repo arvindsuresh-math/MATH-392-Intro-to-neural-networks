@@ -75,7 +75,7 @@ MODELS_DIR = "./models"
 os.makedirs(MODELS_DIR, exist_ok=True) # Create models dir if it doesn't exist
 
 # --- Cross-Validation Fold Definitions ---
-FOLD_DEFINITIONS: List[Dict[str, str]] = [
+FOLD_DEFINITIONS = [
     {'train_suffix': '2008_2012', 'val_suffix': '2016'},
     {'train_suffix': '2008_2016', 'val_suffix': '2012'},
     {'train_suffix': '2012_2016', 'val_suffix': '2008'},
@@ -95,7 +95,7 @@ else:
 
 # --- Default Training Hyperparameters ---
 BATCH_SIZE: int = 64
-MAX_CV_EPOCHS: int = 150 # Max epochs for early stopping during CV
+MAX_CV_EPOCHS: int = 100 # Max epochs for early stopping during CV
 PATIENCE: int = 20      # Patience for early stopping during CV
 FINAL_TRAIN_EPOCHS: int = 300 # Fixed epochs for final training
 OPTIMIZER_CHOICE: Type[optim.Optimizer] = optim.AdamW # Default optimizer
