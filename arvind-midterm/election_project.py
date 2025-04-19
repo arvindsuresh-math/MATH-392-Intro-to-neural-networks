@@ -1,54 +1,54 @@
 # =============================================================================
-# Presidential Election Outcome Prediction - Refactored Midterm Project Code
+# Presidential Election Outcome Prediction - Midterm Project Code
 #
 # High-Level Overview:
-# This script implements a framework for predicting US presidential election
-# outcomes (Democrat, Republican, Other, Non-voter probabilities) at the
-# county level using demographic data. It compares four model types:
-# Ridge Regression, Softmax Regression, 1-Layer MLP, and 2-Layer MLP.
+# This script provides a framework for predicting US presidential election
+# outcomes (specifically, the probability of votes for Democrat, Republican,
+# Other candidates, and Non-voters) at the county level. It leverages
+# demographic features from multiple election years (2008, 2012, 2016, 2020).
+# The primary goal is to compare the predictive performance of four different
+# modeling approaches: Ridge Regression, Softmax Regression (implemented as a
+# simple neural network), a 1-hidden-layer Multi-Layer Perceptron (MLP), and
+# a 2-hidden-layer MLP.
 #
 # Code Structure:
-# 1. Imports & Global Constants: Sets up libraries, configuration parameters
-#    (file paths, hyperparameters, training settings), and device.
-# 2. Weighted Loss Function: Defines the custom loss metric used for NN models.
-# 3. DataHandler Class: Encapsulates all data loading and DataLoader creation.
-#    Assumes data CSVs are in a './data/' subdirectory.
-# 4. BaseNNModel Class: An abstract base class for PyTorch neural network models.
-#    It implements the common logic for cross-validation (`cross_validate`),
-#    final model training (`train_final_model`), model loading (`load_model`),
-#    and evaluation (`evaluate`). Subclasses must implement `_build_network`
-#    and define `MODEL_NAME` and `PARAM_GRID`.
-# 5. NN Model Classes (SoftmaxModel, MLP1Model, MLP2Model):
-#    - Inherit from `BaseNNModel`.
-#    - Define their specific network architecture internally (_Net classes).
-#    - Implement `_build_network` to instantiate their specific architecture
-#      based on hyperparameters.
-#    - Define `MODEL_NAME` and `PARAM_GRID`.
-# 6. RidgeModel Class: Manages Ridge Regression separately due to its
-#    different API (scikit-learn). Provides similar `cross_validate`,
-#    `train_final_model`, `load_model`, and `evaluate` methods.
+# 0. Feature/Target Definitions: Lists defining input features and target variables.
+# 1. Global Constants: Configuration for paths, device (CPU/GPU), and default hyperparameters.
+# 2. DataHandler Class: Manages data loading, preprocessing (scaling), and splitting
+#    for cross-validation and final training/testing. Ensures proper scaler fitting
+#    to prevent data leakage.
+# 3. RidgeModel Class: Implements Ridge Regression using scikit-learn, including
+#    cross-validation for alpha selection, final model training, and evaluation
+#    based on aggregate cross-entropy.
+# 4. BaseNNModel Class: An abstract base class defining the common structure and
+#    methods for PyTorch neural network models (Softmax, MLP1, MLP2). Handles
+#    CV logic, training loops (with weighted cross-entropy loss), early stopping,
+#    model saving/loading, and evaluation.
+# 5. SoftmaxModel, MLP1Model, MLP2Model Classes: Concrete implementations inheriting
+#    from BaseNNModel, each defining its specific network architecture (_build_network).
 #
 # Workflow (Example Usage in a Jupyter Notebook):
-# a. Import this script (e.g., `import election_project as ep`).
-# b. Initialize `ep.DataHandler()`.
-# c. Initialize model handler instances (e.g., `ridge = ep.RidgeModel()`,
-#    `mlp1 = ep.MLP1Model()`).
-# d. To find best hyperparameters and train:
-#    - `model.cross_validate(data_handler, ...)` - Finds best hypers, saves CSV.
-#    - `trained_model = model.train_final_model(data_handler, ...)` - Reads
-#      best hypers from CSV, trains on combined data, saves model artifact,
-#      returns trained model instance.
-# e. To load a previously trained model:
-#    - `loaded_model = model.load_model(...)` - Reads best hypers from CSV,
-#      builds architecture, loads saved artifact, returns model instance.
-# f. Evaluate the final model (obtained from d or e):
-#    - Create a test DataLoader using `DataHandler`.
-#    - `metrics = model.evaluate(test_loader)` - Computes metrics on test set.
+# 1. Instantiate `DataHandler` specifying the `test_year`.
+# 2. Instantiate model handlers (e.g., `RidgeModel()`, `MLP1Model()`).
+# 3. Create necessary directories (./data, ./models, ./results).
+# 4. Run `cross_validate()` for each model handler, passing the `DataHandler` instance.
+#    This performs 3-fold CV on the training years to find optimal hyperparameters,
+#    saving results to CSV files in './results'.
+# 5. Run `train_final_model()` for each model handler. This loads the best
+#    hyperparameters found during CV, trains the model on all training years,
+#    and saves the final model ('.joblib' for Ridge, '.pth' state_dict for NNs)
+#    to './models'.
+# 6. Run `evaluate()` for each model handler. This loads the trained model,
+#    predicts on the `test_year` data, calculates the aggregate cross-entropy loss,
+#    and saves county-level predictions to CSV files in './results'.
+# 7. Compare the aggregate cross-entropy scores across models.
 #
 # File Locations:
-# - Input Data: Assumed to be in './data/' (e.g., './data/X_2008.csv').
-# - Outputs (CV results, models, loss histories): Saved to './models/'.
-#   This directory will be created if it doesn't exist.
+# - ./data/final_dataset.csv : Input dataset (expected location).
+# - ./models/ : Directory where trained models (and scaler) are saved.
+# - ./results/ : Directory where CV results, final loss history (for NNs),
+#                and county-level predictions are saved.
+#
 # =============================================================================
 
 import os
@@ -58,6 +58,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter          
+from datetime import datetime  
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
@@ -65,6 +67,11 @@ from sklearn.model_selection import ParameterGrid
 import joblib
 from typing import List, Dict, Tuple, Any, Type, Union
 from abc import ABC, abstractmethod
+
+# tidy default log‑dir:  logs/ridge_2020‑04‑18_14‑30‑25
+def _tb_writer(model_name: str) -> SummaryWriter:
+    timestamp = datetime.now().strftime("%Y‑%m‑d_%H‑%M‑%S")
+    return SummaryWriter(log_dir=f"logs/{model_name}_{timestamp}")
 
 # =============================================================================
 # 0. All features and targets
@@ -204,14 +211,14 @@ labors = [
 misc = ['P(persons_hispanic|C)', 
         'P(persons_below_poverty|C)']
 
-weights = ['P(18plus|C)', 'P(C)']
+weight_feats = ['P(C)', 'P(18plus|C)']
 
 targets = ['P(democrat|C)',
            'P(other|C)',
            'P(republican|C)',
            'P(non_voter|C)']
 
-all_features = weights \
+all_features = weight_feats \
         + incomes \
         + land \
         + households \
@@ -286,8 +293,8 @@ class DataHandler:
         """
         self.features = list(set(all_features) - set(features_to_drop))
         self.input_dim = len(self.features)
-        self.test_year = [test_year]
-        self.train_years = list(set(years) - {test_year})
+        self.test_year = test_year
+        self.train_years = sorted(set(years) - {test_year})
         self.folds = [
                 ([self.train_years[0], self.train_years[1]], self.train_years[2]),
                 ([self.train_years[0], self.train_years[2]], self.train_years[1]),
@@ -297,7 +304,7 @@ class DataHandler:
         print(f"DataHandler initialized: n_features = {self.input_dim}")
 
     def load_data(self, 
-                  fit_years: list, # list of years to fit StandardScalar
+                  fit_years: List[int], # list of years to fit StandardScalar
                   transform_year: int, # year to transform StandardScaler
                   ):
         data = pd.read_csv('data/final_dataset.csv')
@@ -323,6 +330,10 @@ class DataHandler:
         X_fit = scaler.fit_transform(X_fit) #fit and transform X_fit
         X_transform = scaler.transform(X_transform) #transform X_transform
 
+        # wrap back into DataFrames so downstream .values works
+        X_fit = pd.DataFrame(X_fit, columns=self.features)
+        X_transform = pd.DataFrame(X_transform, columns=self.features)
+
         return X_fit, y_fit, wts_fit, X_transform, y_transform, wts_transform
 
     def _create_dataset(self, X_df: pd.DataFrame, y_df: pd.DataFrame, wts_df: pd.DataFrame) -> TensorDataset:
@@ -332,7 +343,7 @@ class DataHandler:
         wts_tensor = torch.tensor(wts_df.values, dtype=torch.float32) # Already [:, 1] shape
         return TensorDataset(X_tensor, y_tensor, wts_tensor)
 
-    def create_dataloaders(self, train_years: int, val_year: int) -> Tuple[DataLoader, DataLoader]:
+    def create_dataloaders(self, train_years: List[int], val_year: int) -> Tuple[DataLoader, DataLoader]:
         """Creates DataLoaders for training and validation sets."""
         # load data for training and validation years
         X_train, y_train, wts_train, X_val, y_val, wts_val = self.load_data(train_years,val_year)
@@ -379,7 +390,7 @@ class RidgeModel:
 
     def cross_validate(self,
                        data_handler: DataHandler,
-                       param_grid: List[float]
+                       param_grid: List[float] = RIDGE_PARAM_GRID
                        ) -> None:
         """Performs CV for Ridge, saves results, and stores the best alpha."""
         print(f"\n--- Starting Cross-Validation for {self.MODEL_NAME.upper()} ---")
@@ -389,36 +400,41 @@ class RidgeModel:
 
         for alpha in param_grid:
             print(f"  Testing alpha = {alpha}:")
-            fold_validation_scores = []
+            fold_val_losses = []
             for train_years, val_year in data_handler.folds:
-                X_train, y_train, _, X_val, y_val, wts_val = data_handler.load_data(train_years,val_year)
+                # Load data for the current fold
+                X_train, y_train, wts_train, X_val, y_val, wts_val = data_handler.load_data(train_years,val_year)
 
+                # fit and predict
                 model_fold = Ridge(alpha=alpha)
-                model_fold.fit(X_train.values, y_train.values)
+                model_fold.fit(X_train.values, y_train.values, sample_weight=wts_train.values.ravel())
                 y_pred_val = model_fold.predict(X_val.values)
 
-                # Use weighted MSE for validation score to be somewhat comparable
-                # Weights are P(C), which is the 3rd element from load_raw_data
+                # Use weighted MSE (weights = P(C)) to compute validation loss
                 weights_val = wts_val.values.squeeze() # Ensure weights is 1D array
-                validation_score = mean_squared_error(y_val.values, y_pred_val, sample_weight=weights_val)
-                # validation_score = mean_squared_error(y_val_pd.values, y_pred_val) # Original unweighted MSE
+                val_loss = mean_squared_error(y_val.values, y_pred_val, sample_weight=weights_val)
 
-                fold_validation_scores.append(validation_score)
+                fold_val_losses.append(val_loss)
 
-            avg_validation_score = np.mean(fold_validation_scores)
-            print(f"    Avg Val Score (Weighted MSE): {avg_validation_score:.6f}")
-            results_list.append({'alpha': alpha, 'mean_cv_score': avg_validation_score})
+            # Calculate mean validation loss for this alpha
+            mean_val_loss = np.mean(fold_val_losses)
+            print(f"    Avg Val Score (Weighted MSE): {mean_val_loss:.6f}")
+            results_list.append({'alpha': alpha, 'mean_cv_score': mean_val_loss})
 
             # Update best score and alpha if this fold is better
-            if avg_validation_score < best_score:
-                best_score = avg_validation_score
+            if mean_val_loss < best_score:
+                best_score = mean_val_loss
                 current_best_alpha = alpha
 
-        self.best_alpha = current_best_alpha # Store best alpha found
+        # Store best alpha found
+        self.best_alpha = current_best_alpha 
+
+        # Save results to CSV
         results_df = pd.DataFrame(results_list).sort_values(by='mean_cv_score', ascending=True).reset_index(drop=True)
         results_df.to_csv(self.results_save_path, index=False)
         print(f"CV results saved to: {self.results_save_path}")
 
+        # Print best alpha and score
         print(f"\nBest {self.MODEL_NAME.upper()} CV alpha: {self.best_alpha} (Score: {best_score:.6f})")
         print(f"--- Finished Cross-Validation for {self.MODEL_NAME.upper()} ---")
 
@@ -438,12 +454,12 @@ class RidgeModel:
         self.model = Ridge(alpha=self.best_alpha)
 
         # 3. Load combined training data
-        X_train, y_train, _, _, _, _ = data_handler.load_data(data_handler.train_years, data_handler.test_year)
+        X_train, y_train, wts_train, _, _, _ = data_handler.load_data(data_handler.train_years, data_handler.test_year)
         print(f"Loaded final training data: {X_train.shape[0]} samples.")
 
         # 4. Fit the model
-        print("Fitting final Ridge model...")
-        self.model.fit(X_train.values, y_train.values)
+        self.model.fit(X_train.values, y_train.values, sample_weight=wts_train.values.ravel())
+        # self.model.fit(X_train.values, y_train.values)
         print("Ridge model fitting complete.")
 
         # 5. Save the trained model
@@ -456,9 +472,6 @@ class RidgeModel:
         """Loads a trained Ridge model."""
         print(f"Loading trained Ridge model from: {self.model_save_path}")
         self.model = joblib.load(self.model_save_path)
-        # Optionally load best_alpha too, though not strictly needed after loading model object
-        # results_df = pd.read_csv(self.results_save_path)
-        # self.best_alpha = results_df.iloc[0]['alpha']
         print("Ridge model loaded successfully.")
         return self.model
 
@@ -495,11 +508,11 @@ class RidgeModel:
 
         Returns:
             Tuple[np.ndarray, float]: A tuple containing:
-                - aggregate_prediction_softmax (np.ndarray): Vector of predicted national
+                - agg_pred_np (np.ndarray): Vector of predicted national
                   vote shares after Softmax (shape: [output_dim]).
-                - aggregate_cross_entropy (float): The calculated CE loss.
+                - agg_ce (float): The calculated CE loss.
         """
-        # print(f"Evaluating {self.MODEL_NAME.upper()} on '{test_data_suffix}' with Aggregate Cross-Entropy (CPU)...")
+        print(f"Evaluating {self.MODEL_NAME.upper()} on year '{data_handler.test_year}' with Aggregate Cross-Entropy (CPU)...")
 
         # --- All computations use NumPy (implicitly CPU) ---
         # Assume self.model exists and is loaded/trained before calling evaluate
@@ -550,7 +563,7 @@ class RidgeModel:
 
         # Display the resulting aggregate distributions
         print(f"  Aggregate True Distribution: {agg_true_np}")
-        print(f"  Aggregate Predicted Distribution (Softmax): {agg_pred_tensor}")
+        print(f"  Aggregate Predicted Distribution (Softmax): {agg_pred_np}")
         print(f"  Aggregate Cross-Entropy: {agg_ce:.6f}")
 
         # 8. Return Softmax-normalized aggregate prediction and loss
@@ -698,16 +711,18 @@ class BaseNNModel(ABC):
         """Performs CV for the NN model, saves results, and stores best params."""
         input_dim = data_handler.input_dim
         print(f"\n--- Starting Cross-Validation for {self.MODEL_NAME.upper()} ---")
+        tb = _tb_writer(self.MODEL_NAME + "_cv")
+
         results_list = []
-        best_avg_score = float('inf')
+        best_mean_loss = float('inf')
         current_best_params = {}
 
         # Use the PARAM_GRID defined in the subclass
-        for config in ParameterGrid(self.PARAM_GRID):
+        for i, config in enumerate(ParameterGrid(self.PARAM_GRID), 1):
             print(f"  Testing config: {config}")
-            fold_validation_scores = []
-            for i, train_years, val_year in enumerate(data_handler.folds):
-                print(f"    Fold {i+1}/3: Train Years: {train_years}, Val Year: {val_year}")
+            fold_val_losses = []
+            for j, (train_years, val_year) in enumerate(data_handler.folds, 1):
+                print(f"    Fold {i}: Train Years: {train_years}, Val Year: {val_year}")
                 # Create DataLoaders for this fold
                 train_loader, val_loader = data_handler.create_dataloaders(train_years,val_year)
 
@@ -715,15 +730,23 @@ class BaseNNModel(ABC):
                 model_fold = self._build_network(config, input_dim).to(DEVICE)
 
                 # Setup optimizer using parameters from config
-                lr = config['learning_rate']
-                # Handle optional weight decay
-                wd = config.get('weight_decay', 0) # Default to 0 if not in config
-                optimizer = optimizer_choice(model_fold.parameters(), lr=lr, weight_decay=wd)
+                optimizer = optimizer_choice(model_fold.parameters(), 
+                                             lr=config['learning_rate'], 
+                                             weight_decay=config.get('weight_decay', 0))
 
-                validation_score = self._train_one_fold(
-                    model_fold, train_loader, val_loader, optimizer, max_epochs, patience, device=DEVICE
-                )
-                fold_validation_scores.append(validation_score)
+                val_loss = self._train_one_fold(
+                                                model_fold, 
+                                                train_loader, 
+                                                val_loader, 
+                                                optimizer, 
+                                                max_epochs, 
+                                                patience
+                                                    )
+                fold_val_losses.append(val_loss)
+                tb.add_scalar(f"config{i}/fold{j}_val", val_loss, i)
+                # You can also log hyper‑params once:
+                if j == 0:
+                    tb.add_hparams(config, {"mean_val_loss": 0})   # placeholder
 
                 # Clean up memory
                 del train_loader, val_loader, model_fold, optimizer
@@ -731,15 +754,15 @@ class BaseNNModel(ABC):
                 elif DEVICE.type == 'mps': torch.mps.empty_cache()
 
             # Filter out non-finite scores before calculating mean
-            finite_scores = [s for s in fold_validation_scores if np.isfinite(s)]
-            avg_validation_score = np.mean(finite_scores) if finite_scores else float('inf')
+            finite_scores = [s for s in fold_val_losses if np.isfinite(s)]
+            mean_val_loss = np.mean(finite_scores) if finite_scores else float('inf')
 
-            print(f"    Avg Val Score (Weighted CE): {avg_validation_score:.6f}")
-            results_list.append({**config, 'mean_cv_score': avg_validation_score})
+            print(f"    Avg Val Score (Weighted CE): {mean_val_loss:.6f}")
+            results_list.append({**config, 'mean_cv_score': mean_val_loss})
 
             # Update best score and params if this fold is better
-            if avg_validation_score < best_avg_score:
-                best_avg_score = avg_validation_score
+            if mean_val_loss < best_mean_loss:
+                best_mean_loss = mean_val_loss
                 current_best_params = config
 
         self.best_params = current_best_params # Store best params found
@@ -747,7 +770,7 @@ class BaseNNModel(ABC):
         results_df.to_csv(self.results_save_path, index=False)
         print(f"CV results saved to: {self.results_save_path}")
 
-        print(f"\nBest {self.MODEL_NAME.upper()} CV params: {self.best_params} (Score: {best_avg_score:.6f})")
+        print(f"\nBest {self.MODEL_NAME.upper()} CV params: {self.best_params} (Score: {best_mean_loss:.6f})")
         print(f"--- Finished Cross-Validation for {self.MODEL_NAME.upper()} ---")
 
     def train_final_model(self,
