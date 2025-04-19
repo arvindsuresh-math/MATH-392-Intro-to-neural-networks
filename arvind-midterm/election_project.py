@@ -532,7 +532,7 @@ class RidgeModel:
 
         # 3. Save county-level raw predictions
         pred_df = pd.DataFrame(y_pred_np, columns=y_pd.columns) # Use target column names
-        pred_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_{data_handler.test_year[0]}_predictions.csv")
+        pred_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_{data_handler.test_year}_predictions.csv")
         pred_df.to_csv(pred_save_path, index=False)
         print(f"  County-level raw predictions saved to: {pred_save_path}")
 
