@@ -15,17 +15,17 @@
 | 12     | 03/03  | Logistic regression (binary and multi-class)                            |
 | 13     | 03/05  | Entropy (surprisal, entropy, cross-entropy)                             |
 | 14     | 03/17  | Gradient descent (implementation for logistic/linear regression)        |
-| 15     | 03/19  | Multi-layer perceptrons (high-level overview, tensors, PyTorch)         |
+| 15     | 03/19  | Multi-layer perceptrons (high-level overview, universal approx)         |
 | 16     | 03/24  | Project exploration day                                                 |
 | 17     | 03/26  | ML project aspects (bias-variance, cross-validation, regularization)    |
-| 18     | 03/31  | Backpropogation (implementing Karpathy's micrograd)                     |
-| 19     | 04/02  | Gradient descent algorithms                                             |
-| 20     | 04/07  | CNN I                                                                   |
-| 21     | 04/09  | CNN II                                                                  |
+| 18     | 03/31  | Pytorch I (tensors)                                                     |
+| 19     | 04/02  | Pytorch II (building a NN)                                              |
+| 20     | 04/07  | Chain rule                                                              |
+| 21     | 04/09  | Backpropagation                                                         |
 |        |        | Project 1 due                                                           |
-| 22     | 04/14  | Fine-tuning I                                                           |
-| 23     | 04/16  | Fine-tuning I                                                           |
-| 24     | 04/21  | Fine-tuning III                                                         |
+| 22     | 04/14  | CNN I (convolutions, some common filters for images)                    |
+| 23     | 04/16  | No class                                                                |
+| 24     | 04/21  | CNN II (MNIST)                                                          |
 | 25     | 04/23  | Transformers I                                                          |
 | 26     | 04/28  | Transformers II                                                         |
 | 27     | 04/30  | Transformers III                                                        |
