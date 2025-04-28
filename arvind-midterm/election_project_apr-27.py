@@ -493,6 +493,65 @@ class DynamicMLP(nn.Module):
         probabilities = self.softmax(logits)
         return probabilities
 
+import numpy as np
+import xgboost as xgb # Make sure xgboost is imported
+
+# =============================================================================
+# Custom XGBoost Evaluation Metric (Weighted MSE)
+# =============================================================================
+
+def weighted_mse_xgb(preds: np.ndarray, dtrain: xgb.DMatrix) -> Tuple[str, float]:
+    """
+    Custom XGBoost evaluation metric: Weighted Mean Squared Error.
+
+    Retrieves labels and weights from the DMatrix and calculates MSE weighted
+    by the sample weights.
+
+    Args:
+        preds (np.ndarray): Predictions made by the model. Shape [n_samples * n_outputs].
+                            Needs reshaping for multi-output.
+        dtrain (xgb.DMatrix): The DMatrix containing the true labels and weights.
+
+    Returns:
+        Tuple[str, float]: A tuple containing the metric name ('weighted_mse')
+                           and the calculated metric value.
+    """
+    labels = dtrain.get_label()
+    weights = dtrain.get_weight()
+
+    # Handle potential multi-output shape: preds might be flattened
+    num_samples = len(weights)
+    if preds.shape[0] != num_samples:
+        # Assuming preds is flattened [sample1_out1, sample1_out2, ..., sampleN_out4]
+        # Reshape based on number of samples and known number of outputs (4)
+        num_outputs = labels.shape[0] // num_samples # Should be 4
+        preds = preds.reshape(num_samples, num_outputs)
+        labels = labels.reshape(num_samples, num_outputs)
+
+    squared_error = (labels - preds)**2 # Element-wise for multi-output
+
+    # Ensure weights broadcast correctly if labels/preds are multi-output
+    # If weights is [n_samples,], broadcasting usually works with [n_samples, n_outputs]
+    # For clarity or safety, reshape weights: weights.reshape(-1, 1) if needed.
+    
+    # Check if weights sum is zero to avoid division by zero
+    sum_weights = np.sum(weights)
+    if sum_weights == 0:
+        return 'weighted_mse', np.inf # Or some other indicator of invalid weights
+
+    # Calculate weighted MSE: sum(w * SE) / sum(w)
+    # Take the mean across the output dimension *before* weighting and summing samples
+    # This gives an average MSE per output dimension, then weighted by sample weight
+    weighted_squared_error = np.mean(squared_error, axis=1) * weights # mean over outputs first -> [n_samples,]
+    
+    # Alternative: Sum weighted errors across all outputs and samples
+    # weighted_squared_error_sum = np.sum(weights.reshape(-1, 1) * squared_error) 
+    # This might be less interpretable than averaging per-output MSE first
+    
+    weighted_mse = np.sum(weighted_squared_error) / sum_weights
+    
+    return 'weighted_mse', float(weighted_mse) # Return name and value
+
 # =============================================================================
 # Objective Classes for Hyperparameter Optimization
 # =============================================================================
