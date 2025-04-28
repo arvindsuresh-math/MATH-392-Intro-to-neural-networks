@@ -755,60 +755,69 @@ class ObjectiveXGBoost:
         return params
 
     def __call__(self, trial: optuna.trial.Trial) -> float:
-        """Runs cross-validation for one XGBoost trial."""
         # --- 1. Suggest Hyperparameters ---
         suggested_params = self._suggest_params(trial)
 
         # --- Get fixed parameters ---
-        # Max rounds for pruning; final model might use more/less with early stopping
         n_estimators = self.fixed_params.get('n_estimators_max_pruning', 200)
-        early_stopping_rounds = self.fixed_params.get('early_stopping_rounds', 20) # Patience for XGBoost
+        early_stopping_rounds = self.fixed_params.get('early_stopping_rounds', 20)
 
         # --- 2. Cross-Validation Loop ---
-        fold_validation_rmses = []
+        fold_validation_metrics = [] # Store the value of our custom metric
         for fold_idx, ((X_train, y_train, wts_train), (X_val, y_val, wts_val)) in enumerate(self.data_handler.cv_data):
-            # --- b. Build Model ---
-            # Use multioutput regression capabilities of XGBoost
+
+            # --- a. Create DMatrix with weights ---
+            dtrain = xgb.DMatrix(X_train, label=y_train, weight=wts_train)
+            dval = xgb.DMatrix(X_val, label=y_val, weight=wts_val)
+            eval_set = [(dval, 'validation_0')] # Use DMatrix in eval_set
+
+            # --- b. Build Model - Use custom eval_metric ---
             model = xgb.XGBRegressor(
-                objective='reg:squarederror', # Standard objective for regression
-                n_estimators=n_estimators,    # Max rounds for this CV fold
+                objective='reg:squarederror',
+                n_estimators=n_estimators,
                 early_stopping_rounds=early_stopping_rounds,
-                eval_metric='rmse',           # Metric for early stopping/pruning
-                # tree_method='gpu_hist',     # Uncomment if using GPU
-                **suggested_params           # Add tunable parameters
+                # Use the custom metric function here
+                eval_metric=XGBoostModel.weighted_mse_xgb,
+                # XGBoost typically minimizes metrics, but if needed: maximize=False,
+                **suggested_params
             )
 
-            # --- c. Setup Pruning Callback ---
+            # --- c. Setup Pruning Callback - Update observation_key ---
             pruning_callback = optuna.integration.XGBoostPruningCallback(
                 trial,
-                observation_key='validation_0-rmse' # Monitor RMSE on the validation set
+                # IMPORTANT: Update the key to match the name returned by the custom metric
+                observation_key='validation_0-weighted_mse'
             )
 
-            # --- d. Training with Pruning/Early Stopping ---
+            # --- d. Training ---
             try:
                 model.fit(
-                    X_train, y_train,
-                    sample_weight=wts_train,
-                    eval_set=[(X_val, y_val)], # Validation set for early stopping & pruning
-                    sample_weight_eval_set=[wts_val], # Optional: weight validation loss
+                    # Pass DMatrix directly to fit
+                    dtrain,
+                    evals=eval_set,
                     callbacks=[pruning_callback],
-                    verbose=False # Suppress XGBoost training output during HPO
+                    verbose=False
                 )
-                # Store the best RMSE achieved for this fold
-                fold_validation_rmses.append(model.best_score)
+                # Store the best score for the custom metric
+                # Note: best_score might still refer to the *loss function* minimization
+                # during training, not necessarily the custom eval metric's best value.
+                # It's safer to retrieve the metric value from the evaluation results history.
+                eval_results = model.evals_result()
+                # Get the best score for our specific metric on the validation set
+                best_score = min(eval_results['validation_0']['weighted_mse'])
+                fold_validation_metrics.append(best_score)
 
             except optuna.TrialPruned:
-                return float('inf') # Return high value if pruned
+                return float('inf')
             except Exception as e:
-                 # Catch potential XGBoost errors during fit
                  print(f"Warning: Trial {trial.number}, Fold {fold_idx+1} failed: {e}")
                  return float('inf') # Treat failed folds as bad trials
 
 
         # --- 3/4. Aggregate and Return ---
-        # We want to minimize RMSE
-        mean_cv_rmse = np.mean(fold_validation_rmses)
-        return mean_cv_rmse if not np.isnan(mean_cv_rmse) else float('inf')
+        # Minimize the weighted MSE
+        mean_cv_metric = np.mean(fold_validation_metrics)
+        return mean_cv_metric if not np.isnan(mean_cv_metric) else float('inf')
 
 # =============================================================================
 # Hyperparameter Tuner Class
@@ -1160,6 +1169,50 @@ class XGBoostModel:
         self.model_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_final_model.json") # XGBoost native save format
         # self.model_save_path = os.path.join(MODELS_DIR, f"{self.MODEL_NAME}_final_model.joblib") # Alternative save format
 
+    @staticmethod
+    def weighted_mse_xgb(preds: np.ndarray, dtrain: xgb.DMatrix) -> Tuple[str, float]:
+        """
+        Custom XGBoost evaluation metric: Weighted Mean Squared Error.
+        Retrieves labels and weights from the DMatrix and calculates MSE weighted
+        by the sample weights.
+        (Code for the function itself remains the same)
+        """
+        labels = dtrain.get_label()
+        weights = dtrain.get_weight()
+
+        # Handle potential multi-output shape: preds might be flattened
+        num_samples = len(weights)
+        if preds.shape[0] != num_samples:
+            # Assuming preds is flattened [sample1_out1, sample1_out2, ..., sampleN_out4]
+            # Reshape based on number of samples and known number of outputs (4)
+            num_outputs = labels.shape[0] // num_samples # Should be 4
+            preds = preds.reshape(num_samples, num_outputs)
+            labels = labels.reshape(num_samples, num_outputs)
+
+        squared_error = (labels - preds)**2 # Element-wise for multi-output
+
+        # Ensure weights broadcast correctly if labels/preds are multi-output
+        # If weights is [n_samples,], broadcasting usually works with [n_samples, n_outputs]
+        # For clarity or safety, reshape weights: weights.reshape(-1, 1) if needed.
+        
+        # Check if weights sum is zero to avoid division by zero
+        sum_weights = np.sum(weights)
+        if sum_weights == 0:
+            return 'weighted_mse', np.inf # Or some other indicator of invalid weights
+
+        # Calculate weighted MSE: sum(w * SE) / sum(w)
+        # Take the mean across the output dimension *before* weighting and summing samples
+        # This gives an average MSE per output dimension, then weighted by sample weight
+        weighted_squared_error = np.mean(squared_error, axis=1) * weights # mean over outputs first -> [n_samples,]
+        
+        # Alternative: Sum weighted errors across all outputs and samples
+        # weighted_squared_error_sum = np.sum(weights.reshape(-1, 1) * squared_error) 
+        # This might be less interpretable than averaging per-output MSE first
+        
+        weighted_mse = np.sum(weighted_squared_error) / sum_weights
+        
+        return 'weighted_mse', float(weighted_mse) # Return name and value
+
     def cross_validate(self,
                        dh: 'DataHandler',
                        tuner: 'HyperparameterTuner', # Assumes Tuner class exists
@@ -1198,85 +1251,63 @@ class XGBoostModel:
                           dh: 'DataHandler',
                           final_fit_params: Optional[Dict[str, Any]] = None
                          ) -> xgb.XGBRegressor:
-        """
-        Trains the final XGBoost model using the best parameters from CV.
-
-        Args:
-            dh (DataHandler): The data handler instance.
-            final_fit_params (Optional[Dict[str, Any]]): Optional parameters for the
-                final `.fit()` call (e.g., {'early_stopping_rounds': 50}).
-
-        Returns:
-            xgb.XGBRegressor: The trained final model.
-        """
+        # ... (keep steps 1, loading best_params) ...
         print(f"\n--- Starting Final Model Training for {self.MODEL_NAME.upper()} ---")
-
-        # 1. Ensure best_params are available (e.g., loaded if not just run CV)
-        if self.best_params is None:
-            # Logic to load best params from saved study results if needed
-            # Placeholder: Assume results_save_path contains simple JSON of best params
-            try:
-                with open(os.path.join(RESULTS_DIR, f"{self.MODEL_NAME}_best_params.json"), 'r') as f:
-                     self.best_params = json.load(f)
-                print(f"Loaded best params from file: {self.best_params}")
-            except FileNotFoundError:
-                 raise ValueError("Best params not found. Run cross_validate first or ensure results are saved.")
-        else:
-             print(f"Using best params from CV: {self.best_params}")
+        # 1. Ensure best_params are available... (existing code)
 
         # 2. Build model instance with best params + any fixed ones
-        # Add objective, eval_metric etc. that weren't part of the tuning space
         fixed_model_params = {
              'objective': 'reg:squarederror',
-             'eval_metric': 'rmse',
+             # Use the custom metric for final early stopping as well
+             'eval_metric': XGBoostModel.weighted_mse_xgb,
+             # 'maximize': False, # Usually not needed as XGBoost defaults to minimize
              # 'tree_method': 'gpu_hist', # If using GPU
-             # 'n_estimators': 1000 # Set a high initial value, rely on early stopping
         }
-        # Important: n_estimators found during HPO might not be optimal for the full dataset
-        # It's often better to set a high number here and use early stopping.
-        # Remove n_estimators from best_params if it was tuned, or override it.
-        self.best_params.pop('n_estimators', None) # Remove if tuned, otherwise no effect
+        self.best_params.pop('n_estimators', None)
         n_estimators_final = final_fit_params.pop('n_estimators', 1000) if final_fit_params else 1000
-
 
         self.model = xgb.XGBRegressor(
             n_estimators=n_estimators_final,
             **fixed_model_params,
-            **self.best_params # Tuned parameters override others if names clash
+            **self.best_params
             )
 
-        # 3. Load combined training data and optional validation data for early stopping
+        # 3. Load data and create DMatrix with weights
         (X_train, y_train, wts_train), (X_test, y_test, wts_test) = dh.final_data
+        dtrain = xgb.DMatrix(X_train, label=y_train, weight=wts_train)
+        dtest = xgb.DMatrix(X_test, label=y_test, weight=wts_test) # Use test set for early stopping
 
         fit_params = {
-            'eval_set': [(X_test, y_test)],
-            'sample_weight': wts_train,
+            'evals': [(dtest, 'validation')], # Pass DMatrix eval set
             'verbose': False, # Can set to True or a number to see progress
         }
         # Add specific early stopping rounds for final training if provided
-        if final_fit_params and 'early_stopping_rounds' in final_fit_params:
-             fit_params['early_stopping_rounds'] = final_fit_params['early_stopping_rounds']
-
+        early_stopping_rounds_final = (final_fit_params or {}).get('early_stopping_rounds', 50) # Default 50
+        if early_stopping_rounds_final > 0:
+             fit_params['early_stopping_rounds'] = early_stopping_rounds_final
 
         print(f"Loaded final training data: {X_train.shape[0]} samples.")
-        print(f"Fitting final model with n_estimators={n_estimators_final} (early stopping enabled)...")
+        print(f"Fitting final model with n_estimators={n_estimators_final} (early stopping enabled using weighted_mse)...")
 
-        # 4. Fit the model
-        self.model.fit(X_train, y_train, **fit_params)
+        # 4. Fit the model using DMatrix
+        self.model.fit(dtrain, **fit_params)
         print("XGBoost model fitting complete.")
-        print(f"  Best iteration: {self.model.best_iteration}, Best score (RMSE): {self.model.best_score:.6f}")
+
+        # Report best score based on the custom metric
+        eval_results = self.model.evals_result()
+        best_score_final = min(eval_results['validation']['weighted_mse'])
+        print(f"  Best iteration: {self.model.best_iteration}, Best score (weighted_mse): {best_score_final:.6f}")
 
 
-        # 5. Save the trained model (using native JSON format)
+        # 5. Save the trained model (existing code)
         self.model.save_model(self.model_save_path)
-        # Or use joblib: joblib.dump(self.model, self.model_save_path)
-        print(f"Saved final trained XGBoost model to: {self.model_save_path}")
-
-        # Optionally save just the best parameters separately for easy access
         best_params_path = os.path.join(RESULTS_DIR, f"{self.MODEL_NAME}_best_params.json")
+        # Ensure self.best_params contains the HPO results, not overwritten fixed params
+        hpo_best_params = self.best_params # Assuming self.best_params holds HPO results
         with open(best_params_path, 'w') as f:
-             json.dump(self.best_params, f, indent=2)
-        print(f"Saved best parameters to: {best_params_path}")
+             json.dump(hpo_best_params, f, indent=2) # Save HPO parameters
+        print(f"Saved best HPO parameters to: {best_params_path}")
+        print(f"Saved final trained XGBoost model to: {self.model_save_path}")
 
 
         print(f"--- Finished Final Model Training for {self.MODEL_NAME.upper()} ---")
