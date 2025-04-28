@@ -69,11 +69,6 @@ from typing import List, Dict, Tuple, Any, Type, Union
 from abc import ABC, abstractmethod
 import copy
 
-# tidy default log‑dir:  logs/ridge_2020‑04‑18_14‑30‑25
-def _tb_writer(model_name: str) -> SummaryWriter:
-    timestamp = datetime.now().strftime("%Y‑%m‑d_%H‑%M‑%S")
-    return SummaryWriter(log_dir=f"logs/{model_name}_{timestamp}")
-
 # =============================================================================
 # 0. All features and targets
 # =============================================================================
@@ -253,9 +248,9 @@ else:
 
 # --- Default Training Hyperparameters ---
 BATCH_SIZE: int = 64
-MAX_CV_EPOCHS: int = 100 # Max epochs for early stopping during CV
-PATIENCE: int = 20      # Patience for early stopping during CV
-FINAL_TRAIN_EPOCHS: int = 300 # Fixed epochs for final training
+MAX_CV_EPOCHS: int = 30 # Max epochs for CV
+PATIENCE: int = 10      # Patience for early stopping during CV
+FINAL_TRAIN_EPOCHS: int = 150 # Fixed epochs for final training
 OPTIMIZER_CHOICE: Type[optim.Optimizer] = optim.AdamW # Default optimizer
 
 # --- Default Hyperparameter Grids for CV ---
@@ -276,6 +271,32 @@ MLP2_PARAM_GRID = {
     'learning_rate': [1e-2, 1e-3, 1e-4]
     # Note: weight_decay could be added here too if desired
 }
+
+# =============================================================================
+# 2. WeightedStandardScaler Class
+# =============================================================================
+
+class WeightedStandardScaler:
+    """Standard scaler that uses sample‐weights to compute mean & var. Assumes that the sample weights form a probability distribution over all samples (in particular, weights are non-negative and sum to 1)."""
+    def __init__(self):
+        self.mean_ = None
+        self.scale_ = None
+
+    def fit(self, X: np.ndarray, weights: np.ndarray):
+        w = weights.reshape(-1, 1)
+        # weighted mean
+        self.mean_ = (X * w).sum(axis=0)
+        # weighted variance
+        var = (w * (X - self.mean_)**2).sum(axis=0)
+        self.scale_ = np.sqrt(var)
+        return self
+
+    def transform(self, X: np.ndarray):
+        return (X - self.mean_) / self.scale_
+
+    def fit_transform(self, X: np.ndarray, weights: np.ndarray):
+        return self.fit(X, weights).transform(X)
+
 
 # =============================================================================
 # 3. DataHandler Class
@@ -349,10 +370,10 @@ class DataHandler:
         X_fit = df_fit[self.features]
         X_transform = df_transform[self.features]
 
-        #apply StandardScalar to X's
-        scaler = StandardScaler()
-        X_fit = scaler.fit_transform(X_fit) #fit and transform X_fit
-        X_transform = scaler.transform(X_transform) #transform X_transform
+        #apply weighted StandardScaler to X's
+        scaler = WeightedStandardScaler()
+        X_fit = scaler.fit_transform(X_fit.values, wts_fit.values.ravel())
+        X_transform = scaler.transform(X_transform.values)
 
         # wrap back into DataFrames so downstream .values works
         X_fit = pd.DataFrame(X_fit, columns=self.features)
@@ -414,9 +435,10 @@ class RidgeModel:
         current_best_alpha = None
 
         for alpha in param_grid:
+            print("--------------------------------------")
             print(f"  Testing alpha = {alpha}:")
             fold_val_losses = []
-            for (X_train, y_train, wts_train), (X_val, y_val, wts_val) in dh.cv_data:
+            for j, ((X_train, y_train, wts_train), (X_val, y_val, wts_val)) in enumerate(dh.cv_data,1):
                 # Fit Ridge model on training data
                 model_fold = Ridge(alpha=alpha)
                 model_fold.fit(X_train.values, y_train.values, sample_weight=wts_train.values.ravel())
@@ -427,11 +449,15 @@ class RidgeModel:
                 weights_val = wts_val.values.squeeze() # Ensure weights is 1D array
                 val_loss = mean_squared_error(y_val.values, y_pred_val, sample_weight=weights_val)
 
+                fold_str = f" Fold {j} - Train Years: {dh.folds[j-1][0]} - Val Year: {dh.folds[j-1][1]} - "
+                print(fold_str + f"Val Loss (Weighted MSE): {val_loss:.6f}")
+
                 fold_val_losses.append(val_loss)
 
             # Calculate mean validation loss for this alpha
             mean_val_loss = np.mean(fold_val_losses)
             print(f"    Avg Val Score (Weighted MSE): {mean_val_loss:.6f}")
+
             results_list.append({'alpha': alpha, 'mean_cv_score': mean_val_loss})
 
             # Update best score and alpha if this fold is better
@@ -607,7 +633,7 @@ class BaseNNModel(ABC):
                                     weights: torch.Tensor) -> torch.Tensor:
         """
         Calculates a custom weighted cross-entropy loss for a batch.
-        Loss(C) = - sum_k ( target_k * log(output_k) ) / sum_k (target_k)
+        Loss(C) = - sum_k ( target_k * log(output_k) )
         Batch Loss = Expected sample loss = sum_C ( P(C) * Loss(C) ) / sum_C ( P(C) )
 
         Args:
@@ -621,18 +647,14 @@ class BaseNNModel(ABC):
         epsilon = 1e-9
         # Clamp outputs to avoid log(0)
         outputs_clamped = torch.clamp(outputs, epsilon, 1. - epsilon)
-        # Calculate Cross-Entropy per sample: - sum(target * log(pred))/sum(target) over classes
+        # Calculate Cross-Entropy per sample
         sample_ce_loss = -torch.sum(targets * torch.log(outputs_clamped), dim=1, keepdim=True)
-        # Note: targets sum to less than 1, so need to normalize by the sum
-        sample_ce_loss /= torch.sum(targets, dim=1, keepdim=True)
         # Ensure weights tensor has the same shape as sample_ce_loss for broadcasting
         weights_reshaped = weights.view_as(sample_ce_loss)
         # Apply weights: weight * sample_loss
         weighted_sample_losses = sample_ce_loss * weights_reshaped
-        # Calculate the sum of weights for normalization
-        total_weight = weights_reshaped.sum()
         # Calculate the batch loss. 
-        batch_loss = weighted_sample_losses.sum() / total_weight
+        batch_loss = weighted_sample_losses.sum() / weights_reshaped.sum()
         return batch_loss
 
     @abstractmethod
@@ -656,18 +678,19 @@ class BaseNNModel(ABC):
                         val_loader: DataLoader,
                         optimizer: optim.Optimizer,
                         max_epochs: int,
-                        patience: int,
-                        verbose: bool = True
+                        patience: int
                         ) -> float:
         """Internal helper to train model for one CV fold with early stopping."""
         best_val_loss = float('inf')
+        best_train_loss = float('inf')
         epochs_no_improve = 0
         best_epoch = 0
-        last_avg_val_loss = float('inf') # Keep track of last validation loss
 
         model.to(DEVICE)
 
+        # loop over epochs
         for epoch in range(max_epochs):
+            # training
             model.train()
             train_loss_epoch = 0.0
             for features, targets, weights in train_loader:
@@ -680,6 +703,7 @@ class BaseNNModel(ABC):
                 train_loss_epoch += loss.item()
             avg_train_loss = train_loss_epoch / len(train_loader)
 
+            # validation
             model.eval()
             val_loss_epoch = 0.0
             with torch.no_grad():
@@ -689,30 +713,21 @@ class BaseNNModel(ABC):
                     loss = BaseNNModel.weighted_cross_entropy_loss(outputs, targets, weights)
                     val_loss_epoch += loss.item()
             avg_val_loss = val_loss_epoch / len(val_loader)
-            last_avg_val_loss = avg_val_loss # Store current validation loss
 
-            if verbose and (epoch + 1) % 25 == 0: # Print less frequently during CV
-                 print(f"      Epoch {epoch+1}/{max_epochs} -> Train Loss: {avg_train_loss:.6f}, Val Loss: {avg_val_loss:.6f}")
-
+            # update best validation loss and epochs_no_improve
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
+                best_train_loss = avg_train_loss
                 epochs_no_improve = 0
                 best_epoch = epoch + 1
             else:
                 epochs_no_improve += 1
 
+            # early stopping check
             if epochs_no_improve >= patience:
-                if verbose: print(f"    Early stopping at epoch {epoch+1}. Best val loss {best_val_loss:.6f} at epoch {best_epoch}.")
-                break
-        else: # No break occurred (ran for max_epochs)
-             if verbose: print(f"    Reached max_epochs ({max_epochs}). Best val loss {best_val_loss:.6f} at epoch {best_epoch}.")
+                break                
 
-        # Handle case where validation loss was NaN or Inf, or never improved
-        if not np.isfinite(best_val_loss):
-             print(f"    Warning: Best validation loss was {best_val_loss}. Returning last finite loss: {last_avg_val_loss if np.isfinite(last_avg_val_loss) else float('inf')}")
-             return last_avg_val_loss if np.isfinite(last_avg_val_loss) else float('inf')
-
-        return best_val_loss
+        return best_val_loss, best_train_loss, best_epoch
 
     def cross_validate(self,
                        dh: DataHandler,
@@ -722,7 +737,6 @@ class BaseNNModel(ABC):
                        ) -> None:
         """Performs CV for the NN model, saves results, and stores best params."""
         print(f"\n--- Starting Cross-Validation for {self.MODEL_NAME.upper()} ---")
-        tb = _tb_writer(self.MODEL_NAME + "_cv")
 
         results_list = []
         best_mean_loss = float('inf')
@@ -730,6 +744,7 @@ class BaseNNModel(ABC):
 
         # Loop over the PARAM_GRID defined in the subclass
         for i, config in enumerate(ParameterGrid(self.PARAM_GRID), 1):
+            print("--------------------------------------")
             print(f"  Testing config {i}: {config}")
             fold_val_losses = [] #to store val losses for each fold
 
@@ -737,8 +752,9 @@ class BaseNNModel(ABC):
             for j, (train_loader, val_loader) in enumerate(dh.cv_dataloaders, 1):
                 # Build a new model instance for this fold
                 model_fold = self._build_network(config, dh.input_dim).to(DEVICE)
+
                 # call _train_one_fold to get val loss for the fold
-                val_loss = self._train_one_fold(model_fold,
+                val_loss, train_loss, best_epoch = self._train_one_fold(model_fold,
                                                 train_loader, 
                                                 val_loader, 
                                                 optimizer_choice(model_fold.parameters(), 
@@ -748,19 +764,20 @@ class BaseNNModel(ABC):
                                                 patience
                                                 )
                 fold_val_losses.append(val_loss)
-                tb.add_scalar(f"config{i}/fold{j}_val", val_loss, i)
-                # You can also log hyper‑params once:
-                if j == 0:
-                    tb.add_hparams(config, {"mean_val_loss": 0})   # placeholder
+
+                #display train years, val year, fold val loss, train loss, best epoch, last epoch
+                fold_str = f" Fold {j} - Train Years: {dh.folds[j-1][0]} - Val Year: {dh.folds[j-1][1]} - "
+                epochs_str = f"Best epoch: {best_epoch} - "
+                results_str = f"Val Loss: {val_loss:.6f} - Train Loss: {train_loss:.6f}"
+                print(fold_str + epochs_str + results_str)
 
                 # Clean up memory
                 del train_loader, val_loader, model_fold
                 if DEVICE.type == 'cuda': torch.cuda.empty_cache()
                 elif DEVICE.type == 'mps': torch.mps.empty_cache()
 
-            # Filter out non-finite scores before calculating mean
-            finite_scores = [s for s in fold_val_losses if np.isfinite(s)]
-            mean_val_loss = np.mean(finite_scores) if finite_scores else float('inf')
+            # Compute mean validation loss across all folds
+            mean_val_loss = np.mean(fold_val_losses)
 
             print(f"    Avg Val Score (Weighted CE): {mean_val_loss:.6f}")
             results_list.append({**config, 'mean_cv_score': mean_val_loss})
@@ -773,6 +790,7 @@ class BaseNNModel(ABC):
         self.best_params = current_best_params # Store best params found
         results_df = pd.DataFrame(results_list).sort_values(by='mean_cv_score', ascending=True).reset_index(drop=True)
         results_df.to_csv(self.results_save_path, index=False)
+        print("--------------------------------------")
         print(f"CV results saved to: {self.results_save_path}")
 
         print(f"\nBest {self.MODEL_NAME.upper()} CV params: {self.best_params} (Score: {best_mean_loss:.6f})")
@@ -863,13 +881,14 @@ class BaseNNModel(ABC):
         print(f"Saved best model state_dict to: {self.state_dict_save_path}")
         loss_df = pd.DataFrame(self.final_loss_history)
         loss_df.to_csv(self.loss_save_path, index=False)
+        print("---------------------------------")
         print(f"Saved training loss history to: {self.loss_save_path}")
         print(f"--- Finished Final Model Training for {self.MODEL_NAME.upper()} ---")
 
         self.model.eval()
         return self.model
 
-    def load_model(self, input_dim: int, output_dim: int) -> nn.Module:
+    def load_model(self, input_dim: int) -> nn.Module:
         """Loads a trained NN model state_dict, using hyperparameters from CV results."""
         print(f"Loading trained {self.MODEL_NAME} state_dict from: {self.state_dict_save_path}")
 
@@ -937,6 +956,10 @@ class BaseNNModel(ABC):
         # print(f"Loading test data for suffix: {test_data_suffix}")
         _ , (X_pd, y_pd, wts_pd) = dh.final_data
 
+        # extract column names for final results
+        # replace each target P(x|C) with P(x)
+        cols = [x[:-3] + ')' for x in y_pd.columns] 
+
         # Convert pandas DataFrames to PyTorch tensors on CPU
         X_test = torch.tensor(X_pd.values, dtype=torch.float32, device=cpu_device)
         y_test = torch.tensor(y_pd.values, dtype=torch.float32, device=cpu_device)
@@ -952,6 +975,10 @@ class BaseNNModel(ABC):
             # 2. Perform forward pass on the entire test set (on CPU)
             y_pred_tensor = self.model(X_test) # Shape: [num_samples, output_dim]
 
+            # 2.5. Scale the predictions by the row-wise sum of y_true (y_tots)
+            y_tots = y_test.sum(dim=1, keepdim=True) # Shape: [num_samples, 1]
+            y_pred_tensor = y_pred_tensor * y_tots
+
             # 3. Save county-level predictions
             pred_df = pd.DataFrame(y_pred_tensor.numpy(), columns=y_pd.columns) # Convert preds to DataFrame
             pred_save_path = os.path.join(RESULTS_DIR, f"{self.MODEL_NAME}_{dh.test_year}_predictions.csv")
@@ -960,27 +987,36 @@ class BaseNNModel(ABC):
 
             # 4. Calculate Aggregate True Distribution
             agg_y_true = (wts_test * y_test).sum(dim=0) # Shape: [output_dim]
-            agg_y_true /= agg_y_true.sum() # Normalize to ensure it sums to 1
 
             # 5. Calculate Aggregate Predicted Distribution
             agg_y_pred = (wts_test * y_pred_tensor).sum(dim=0) # Shape: [output_dim]
-            # clamp the predicted distribution to avoid log(0)
-            epsilon = 1e-9
-            agg_y_pred = torch.clamp(agg_y_pred, min=epsilon)
 
-            # 6. Calculate cross-entropy between the two aggregate distributions
+            # 6. Calculate cross-entropy between the two aggregate distributions, and self-entropy between agg_y_pred and itself
             agg_ce = (-torch.sum(agg_y_true * torch.log(agg_y_pred))).item()
+            agg_se = (-torch.sum(agg_y_pred * torch.log(agg_y_pred))).item()
 
-            # Prepare return values
-            agg_y_pred = agg_y_pred.numpy() # Return the unclamped version
+        # 7. Prepare the aggregate results for display
+        # Convert true and pred aggregates into a single dataframe with columns from y_pd
+        agg_y_true = agg_y_true.numpy() # Convert to NumPy for display
+        agg_y_pred = agg_y_pred.numpy() # Return the unclamped version
+        agg_df = pd.DataFrame(
+                            [agg_y_true, agg_y_pred],
+                            index=["true", "pred"],
+                            columns=cols
+                            )
+        # add a column for P(underage)
+        agg_df['P(underage)'] = 1 - agg_df.sum(axis=1)
 
-            # Display the resulting aggregate distributions
-            print(f"  Aggregate True Distribution: {agg_y_true.numpy()}")
-            print(f"  Aggregate Predicted Distribution: {agg_y_pred}")
-            print(f"  Aggregate Cross-Entropy: {agg_ce:.6f}")
+        # Add a column for entropy
+        agg_df['entropy'] = [agg_ce, agg_se]
 
-        # 7. Return aggregate prediction and loss
-        return agg_y_pred, agg_ce
+        # 8. Save the aggregate results to CSV
+        agg_save_path = os.path.join(RESULTS_DIR, f"{self.MODEL_NAME}_{dh.test_year}_eval_results.csv")
+        agg_df.to_csv(agg_save_path)
+        print(f"  Aggregate results saved to: {agg_save_path}")
+
+        # 9. Return aggregate results
+        return agg_df
 
 # =============================================================================
 # 6. SoftmaxModel Class
