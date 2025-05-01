@@ -73,10 +73,8 @@ from typing import List, Dict, Tuple, Any, Type, Union
 from abc import ABC, abstractmethod
 import copy
 
-blahblah
-
 # =============================================================================
-# 1. All features and targets
+# 0. All features and targets
 # =============================================================================
 
 # --- Feature and Target Definitions ---
@@ -91,6 +89,28 @@ idx = vars['idx']
 # all other keys in the dict are features
 feature_keys = set(vars.keys()) - set(['targets', 'years', 'idx'])
 all_features = [item for key in feature_keys for item in vars[key]]
+
+# =============================================================================
+# 1. Global Constants and Configuration
+# =============================================================================
+
+# --- File Paths ---
+DATA_DIR = "./data"
+MODELS_DIR = "./models"
+RESULTS_DIR = "./results"
+LOGS_DIR = "./logs"
+PREDS_DIR = "./preds"
+
+# --- Device Selection ---
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    DEVICE = torch.device("mps")
+    print("Using MPS device (Apple Silicon GPU)")
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+    print("Using CUDA device (NVIDIA GPU)")
+else:
+    DEVICE = torch.device("cpu")
+    print("Using CPU device")
 
 # =============================================================================
 # 2. WeightedStandardScaler Class
@@ -143,7 +163,8 @@ class DataHandler:
             cv_data: List of tuples (train_data, val_data) for each CV fold, where each data is itself a triple (X, y, wts).
             final_data: Final training dataset, of the form (X_train, y_train, wts_train), (X_test, y_test, wts_test).
             cv_dataloaders: List of tuples (train_loader, val_loader) for each CV fold.
-            final_dataloaders: Tuple (train_loader, val_loader) for final training.
+            final_dataloader: train_loader for final training.
+            test_set: TensorDataset for the final test set, of the form (X_test, y_test, wts_test).
         """
         self.features = sorted(set(all_features) - set(features_to_drop))
         self.input_dim = len(self.features)
@@ -159,13 +180,12 @@ class DataHandler:
         self.cv_data = [self._load_data(train_years, val_year) for train_years, val_year in self.folds]
         self.final_data = self._load_data(self.train_years, self.test_year)
         # create DataLoaders for cross-validation and final training
-        self.cv_dataloaders = [self._create_dataloaders(train_data, val_data) for train_data, val_data in self.cv_data]
-        self.final_dataloaders = self._create_dataloaders(self.final_data[0], self.final_data[1])
+        self.cv_dataloaders = None
+        self.final_dataloader = None
+        # create tensordataset for final test set
+        self.test_set = self._create_tensors(self.final_data[1]) # (X_test, y_test, wts_test)
 
-        print(f"DataHandler initialized:")
-        print(f"  Using {self.input_dim} features")
-        print(f"  Test year: {self.test_year}")
-        print(f"  Dataloaders created for cross-validation and final training.")
+        print(f"DataHandler initialized - Using {self.input_dim} features - Test year: {self.test_year}")
 
     def _load_data(self,
                    fit_years: List[int], # list of years to fit StandardScaler
@@ -201,37 +221,46 @@ class DataHandler:
         val_output = (X_transform_scaled, y_transform, wts_transform)
         return train_output, val_output
 
-    def _create_dataset(self, data: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> TensorDataset:
+    def _create_tensors(self, data: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> TensorDataset:
         """Converts NumPy arrays (X, y, wts) to a PyTorch TensorDataset."""
         X_np, y_np, wts_np = data
         X_tensor = torch.tensor(X_np, dtype=torch.float32)
         y_tensor = torch.tensor(y_np, dtype=torch.float32)
         wts_tensor = torch.tensor(wts_np, dtype=torch.float32).unsqueeze(1) # Ensure shape [n_samples, 1]
-        return TensorDataset(X_tensor, y_tensor, wts_tensor)
+        return (X_tensor, y_tensor, wts_tensor)
 
-    def _create_dataloaders(self,
-                            train_data: Tuple[np.ndarray, np.ndarray, np.ndarray],
-                            val_data: Tuple[np.ndarray, np.ndarray, np.ndarray]
+    def _create_dataloader(self,
+                            data: Tuple[np.ndarray, np.ndarray, np.ndarray],
+                            batch_size: int,
+                            shuffle: bool = True
                             ) -> Tuple[DataLoader, DataLoader]:
         """Creates DataLoaders for training and validation sets."""
 
         # Create tensor datasets
-        train_dataset = self._create_dataset(train_data)
-        val_dataset = self._create_dataset(val_data)
+        dataset = TensorDataset(self._create_tensors(data))
 
-        # Note: Global seed setting should happen in the main notebook/script ONCE.
-        # torch.manual_seed(42) # Removed from here
+        loader = DataLoader(dataset,
+                            batch_size=batch_size,
+                            shuffle=shuffle,
+                            num_workers=0) # Set num_workers if needed
 
-        train_loader = DataLoader(train_dataset,
-                                  batch_size=BATCH_SIZE,
-                                  shuffle=True,
-                                  num_workers=0) # Set num_workers if needed
-        val_loader = DataLoader(val_dataset,
-                                batch_size=BATCH_SIZE,
-                                shuffle=False,
-                                num_workers=0)
+        return loader
 
-        return train_loader, val_loader
+    def update_cv_dataloaders(self, batch_size: int) -> None:
+        """Updates the cross-validation DataLoaders with the current batch size."""
+        loaders = []
+        for train_data, val_data in self.cv_data:
+            train_loader = self._create_dataloader(train_data, batch_size)
+            val_loader = self._create_dataloader(val_data, batch_size, shuffle=False)
+            loaders.append((train_loader, val_loader))
+        self.cv_dataloaders = loaders
+        print(f"Updated cross-validation DataLoaders with batch size {batch_size}.")
+
+    def update_final_dataloader(self, batch_size: int) -> None:
+        """Updates the final training DataLoader with the current batch size."""
+        final_train_data = self.final_data[0]
+        self.final_dataloader = self._create_dataloader(final_train_data, batch_size)
+        print(f"Updated final training DataLoader with batch size {batch_size}.")
 
 # =============================================================================
 # 4. RidgeModel Class (Uses scikit-learn)
@@ -252,7 +281,7 @@ class RidgeModel:
 
     def cross_validate(self,
                        dh: DataHandler,
-                       param_grid: List[float] = RIDGE_PARAM_GRID
+                       param_grid: List[float]
                        ) -> None:
         """Performs CV for Ridge, saves results, and stores the best alpha."""
         print(f"\n--- Starting Cross-Validation for {self.MODEL_NAME.upper()} ---")
@@ -488,7 +517,7 @@ class NNModel:
                             dh: 'DataHandler',
                             rung_epochs: int,
                             rung_patience: int,
-                            optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE
+                            optimizer_choice: Type[optim.Optimizer]
                            ) -> None: # Returns None, updates config_history directly
         """
         Evaluates a single hyperparameter configuration across all CV folds
@@ -631,9 +660,9 @@ class NNModel:
     def cross_validate(self,
                          dh: 'DataHandler',
                          param_grid: Dict[str, Any],
-                         optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE,
+                         optimizer_choice: Type[optim.Optimizer],
                          # Define the rung schedule directly
-                         rung_schedule: List[Tuple[int, int]] = zip(RUNG_EPOCHS, RUNG_PATIENCE),
+                         rung_schedule: List[Tuple[int, int]],
                          reduction_factor: int = 3, # eta
                          min_finalists: int = 3, # min number of finalists to store
                          max_finalists: int = 10, # max number of finalists to store
@@ -757,93 +786,11 @@ class NNModel:
         
         # return the results_df to display nicely in the notebook
         return results_df
-
-
-
-
-    def cross_validate(self,
-                       dh: DataHandler,
-                       optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE,
-                       max_epochs: int = MAX_CV_EPOCHS,
-                       patience: int = PATIENCE
-                       ) -> None:
-        """Performs CV for the NN model, saves results, and stores best params."""
-        print(f"\n--- Starting Cross-Validation for {self.model_name.upper()} ---")
-
-        results_list = []
-        best_mean_loss = float('inf')
-        current_best_params = {}
-
-        # Ensure the param_grid has 'hidden_layers' defined correctly for each config
-        # ParameterGrid iterates through all combinations defined in self.param_grid
-        for i, config in enumerate(ParameterGrid(self.param_grid), 1):
-            print("--------------------------------------")
-            print(f"  Testing config {i}: {config}")
-            fold_val_losses = []
-
-            # Loop over each fold's DataLoaders
-            for j, (train_loader, val_loader) in enumerate(dh.cv_dataloaders, 1):
-                # Build a new model instance for this fold using the current config
-                model_fold = self._build_network(config, dh.input_dim).to(DEVICE)
-
-                # Create optimizer for this fold based on the current config
-                current_optimizer = optimizer_choice(
-                    model_fold.parameters(),
-                    lr=config['learning_rate'],
-                    weight_decay=config.get('weight_decay', 0) # Handle optional weight decay
-                )
-
-                # Train one fold and get the best validation loss achieved
-                val_loss, train_loss, best_epoch = self._train_one_fold(
-                    model_fold,
-                    train_loader,
-                    val_loader,
-                    current_optimizer,
-                    max_epochs,
-                    patience
-                )
-                fold_val_losses.append(val_loss)
-
-                # Display fold results
-                fold_str = f" Fold {j} - Train Years: {dh.folds[j-1][0]} - Val Year: {dh.folds[j-1][1]} - "
-                epochs_str = f"Best epoch: {best_epoch} - "
-                results_str = f"Val Loss: {val_loss:.6f} - Train Loss: {train_loss:.6f}"
-                print(fold_str + epochs_str + results_str)
-
-                # Clean up memory
-                del model_fold, current_optimizer
-                if DEVICE.type == 'cuda': torch.cuda.empty_cache()
-                elif DEVICE.type == 'mps': torch.mps.empty_cache()
-
-            # Compute mean validation loss across all folds for this config
-            mean_val_loss = np.mean(fold_val_losses)
-            print(f"    Avg Val Score (Weighted CE): {mean_val_loss:.6f}")
-            results_list.append({**config, 'mean_cv_score': mean_val_loss})
-
-            # Update best score and params if this config is better
-            if mean_val_loss < best_mean_loss:
-                best_mean_loss = mean_val_loss
-                current_best_params = config
-
-        self.best_params = current_best_params # Store best params found
-        results_df = pd.DataFrame(results_list)
-        # Ensure 'hidden_layers' column is handled correctly if it exists
-        if 'hidden_layers' in results_df.columns:
-           results_df['hidden_layers'] = results_df['hidden_layers'].astype(str) # Save lists as strings
-        results_df = results_df.sort_values(by='mean_cv_score', ascending=True).reset_index(drop=True)
-        results_df.to_csv(self.results_save_path, index=False)
-        print("--------------------------------------")
-        print(f"CV results saved to: {self.results_save_path}")
-
-        print(f"\nBest {self.model_name.upper()} CV params: {self.best_params} (Score: {best_mean_loss:.6f})")
-        print(f"--- Finished Cross-Validation for {self.model_name.upper()} ---")
-
-
-
+ 
     def train_final_model(self,
                           dh: DataHandler,
-                          final_train_epochs: int = FINAL_TRAIN_EPOCHS,
-                          optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE,
+                          final_train_epochs: int,
+                          optimizer_choice: Type[optim.Optimizer],
                           final_patience: int = 50 # Patience for final training early stopping
                           ) -> nn.Module:
         """Trains the final NN model using the best hyperparams from CV."""
@@ -858,7 +805,7 @@ class NNModel:
         self.model = self._build_network(self.best_params, dh.input_dim).to(DEVICE)
 
         # 3. Create final DataLoader
-        final_train_loader, _ = dh.final_dataloaders # We only need train loader here
+        final_train_loader = dh.final_dataloader # We only need train loader here
 
         # 4. Setup Optimizer using best parameters
         lr = self.best_params['learning_rate']
@@ -959,18 +906,20 @@ class NNModel:
 
         # 2. Get test features from DataHandler
         # We only need X for prediction; load directly as tensor
-        _, (X_test_pd, y_test, _) = dh.final_data
-        X_test_tensor = torch.tensor(X_test_pd.values, dtype=torch.float32)
-        y_tots_tensor = torch.tensor(y_test, dtype=torch.float32).sum(dim=1, keepdim=True).to(DEVICE)
+        X_test, y_test, _ = dh.test_set
+        y_tots = y_test.sum(axis = 1, keepdims=True) # Sum y_test to get total votes per county
+
+        # move the test tensors to the correct device
+        X_test, y_test, y_tots = X_test.to(DEVICE), y_test.to(DEVICE), y_tots.to(DEVICE)
 
         # 3. Ensure model is in eval mode and on the correct device
         self.model.eval()
-        self.model.to(DEVICE) # Ensure model is on the global DEVICE
+        self.model.to(DEVICE)
 
         # 4. Perform prediction
         with torch.no_grad():
-            outputs = self.model(X_test_tensor) # Raw probabilities [n_samples, 4] on DEVICE
-            y_pred = outputs * y_tots_tensor # Scaled predictions [n_samples, 4] on DEVICE
+            outputs = self.model(X_test) # Raw probabilities [n_samples, 4] on DEVICE
+            y_pred = outputs * y_tots # Scaled predictions [n_samples, 4] on DEVICE
 
         # 5. Move predictions to CPU and convert to NumPy array
         y_pred = y_pred.cpu().numpy()
@@ -996,7 +945,7 @@ class XGBoostModel:
     """
     MODEL_NAME = "xgboost"
 
-    def __init__(self, model_name: str = "xgboost", param_grid: Dict = XGB_PARAM_GRID):
+    def __init__(self, param_grid: Dict, model_name: str = "xgboost"):
         """
         Initializes the XGBoostModel handler.
 
@@ -1058,7 +1007,7 @@ class XGBoostModel:
 
     def cross_validate(self,
                        dh: DataHandler,
-                       early_stopping_rounds: int = XGB_EARLY_STOPPING_ROUNDS
+                       early_stopping_rounds: int
                        ) -> None:
         """
         Performs Cross-Validation for XGBoost using early stopping.
