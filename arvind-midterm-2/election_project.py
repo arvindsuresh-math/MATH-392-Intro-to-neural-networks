@@ -55,6 +55,7 @@ import os
 import pandas as pd
 import numpy as np
 import math
+import json
 import xgboost as xgb
 import torch
 import torch.nn as nn
@@ -72,8 +73,10 @@ from typing import List, Dict, Tuple, Any, Type, Union
 from abc import ABC, abstractmethod
 import copy
 
+blahblah
+
 # =============================================================================
-# 0. All features and targets
+# 1. All features and targets
 # =============================================================================
 
 # --- Feature and Target Definitions ---
@@ -88,74 +91,6 @@ idx = vars['idx']
 # all other keys in the dict are features
 feature_keys = set(vars.keys()) - set(['targets', 'years', 'idx'])
 all_features = [item for key in feature_keys for item in vars[key]]
-
-# =============================================================================
-# 1. Global Constants and Configuration
-# =============================================================================
-
-# --- File Paths ---
-DATA_DIR = "./data"
-MODELS_DIR = "./models"
-RESULTS_DIR = "./results"
-LOGS_DIR = "./logs"
-PREDS_DIR = "./preds"
-
-# --- Device Selection ---
-if torch.backends.mps.is_available() and torch.backends.mps.is_built():
-    DEVICE = torch.device("mps")
-    print("Using MPS device (Apple Silicon GPU)")
-elif torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
-    print("Using CUDA device (NVIDIA GPU)")
-else:
-    DEVICE = torch.device("cpu")
-    print("Using CPU device")
-
-# --- Default Training Hyperparameters ---
-BATCH_SIZE: int = 64
-MAX_CV_EPOCHS: int = 30 # Max epochs for CV
-PATIENCE: int = 10      # Patience for early stopping during CV
-FINAL_TRAIN_EPOCHS: int = 150 # Fixed epochs for final training
-OPTIMIZER_CHOICE: Type[optim.Optimizer] = optim.AdamW # Default optimizer
-
-# --- Default Hyperparameter Grids for CV ---
-RIDGE_PARAM_GRID = [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0]
-SOFTMAX_PARAM_GRID = {
-    'learning_rate': [1e-2, 1e-3, 1e-4],
-    'weight_decay': [0, 1e-5, 1e-3]
-}
-MLP1_PARAM_GRID = {
-    'n_hidden': [16, 64, 128],
-    'dropout_rate': [0.1, 0.3, 0.5],
-    'learning_rate': [1e-2, 1e-3, 1e-4]
-    # Note: weight_decay could be added here too if desired
-}
-MLP2_PARAM_GRID = {
-    'shared_hidden_size': [16, 32, 64],
-    'dropout_rate': [0.1, 0.3, 0.5],
-    'learning_rate': [1e-2, 1e-3, 1e-4]
-    # Note: weight_decay could be added here too if desired
-}
-
-# --- XGBoost Hyperparameter Grid and Constants ---
-XGB_PARAM_GRID = {
-    'learning_rate': [0.05, 0.1, 0.2],     # Step size shrinkage (eta)
-    'max_depth': [5, 7],                # Max depth of a tree
-    'subsample': [0.8, 1.0],         # Fraction of samples used per tree
-    'colsample_bytree': [0.8, 1.0],  # Fraction of features used per tree
-    'gamma': [0.1, 0.2],                # Min loss reduction for split (min_split_loss)
-    'reg_alpha': [0, 0.1, 1.0],            # L1 regularization
-    'reg_lambda': [0, 0.1, 1.0],           # L2 regularization
-    # Fixed parameters for consistency
-    'objective': ['reg:squarederror'], # Regression objective for each target
-    'n_estimators': [200],             # High initial value, CV uses early stopping
-    'random_state': [42]               # For reproducibility
-}
-
-XGB_EARLY_STOPPING_ROUNDS = 20 # Early stopping rounds for CV fits
-
-RUNG_EPOCHS = [25, 50, 75, 100, 125, 150, 175, 200] # Rung epochs for MLP models
-RUNG_PATIENCE = [15, 20, 25, 30, 35, 40, 45, 50] # Rung patience for MLP models
 
 # =============================================================================
 # 2. WeightedStandardScaler Class
@@ -238,7 +173,7 @@ class DataHandler:
                    ) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """Loads and preprocesses data for a specific train/validation split."""
 
-        data = pd.read_csv(self.data_csv_path)
+        data = pd.read_csv(DATA_DIR + '/final_dataset.csv')
 
         # Make datasets with fit years and transform years
         df_fit = data[data['year'].isin(fit_years)].reset_index(drop=True)
@@ -515,115 +450,41 @@ class NNModel:
 
         return nn.Sequential(*layers)
 
-    def _train_one_fold(self,
-                          model: nn.Module,
-                          optimizer: optim.Optimizer,
-                          train_loader: DataLoader,
-                          val_loader: DataLoader,
-                          rung_max_epochs: int,
-                          rung_patience: int,
-                          # --- Cumulative state passed in, tracked, and returned ---
-                          # --- Assumes caller ensures these are valid initial values ---
-                          best_model_state: Dict[str, torch.Tensor], # Previous best overall state
-                          best_val_loss: float,
-                          best_epoch: int,
-                          train_loss_at_best: float,
-                          last_epoch: int,
-                          patience_used: int
-                         ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor], int, int, int, float, float]:
-        """
-        Continues training a model for a single fold up to a target epoch count,
-        resuming from its exact previous state and tracking cumulative patience.
-
-        Receives the full cumulative state (including previous best state) and
-        updates it based on training progress within this run. Stops if cumulative
-        patience reaches `rung_patience` or `last_epoch` reaches `rung_max_epochs`.
-        Minimalist implementation assumes valid non-None inputs are provided by the caller.
-
-        Args:
-            model (nn.Module): The PyTorch model instance. Assumed to be on DEVICE and
-                               loaded with the *last state* from the previous run by the caller.
-            optimizer (optim.Optimizer): The optimizer for the model.
-            train_loader (DataLoader): DataLoader for the training set of this fold.
-            val_loader (DataLoader): DataLoader for the validation set of this fold.
-            rung_max_epochs (int): The target *total* number of epochs for this rung.
-            rung_patience (int): The maximum cumulative patience allowed for this rung.
-            best_model_state (Dict): State dict for the overall best validation loss seen so far.
-            best_val_loss (float): The best validation loss achieved *across all previous runs*.
-            best_epoch (int): The *cumulative* epoch number where `best_val_loss` occurred.
-            train_loss_at_best (float): The training loss corresponding to `best_epoch`.
-            last_epoch (int): The *cumulative* epoch number the model reached in the last run.
-            patience_used (int): The cumulative count of epochs without improvement ending the last run.
-
-        Returns:
-            Tuple containing updated cumulative state for this fold:
-              - best_model_state (Dict): Updated state dict corresponding to the overall best validation loss.
-              - last_model_state (Dict): State dict at the exact point training stopped in this run.
-              - patience_used (int): Updated cumulative patience count.
-              - best_epoch (int): Updated cumulative epoch number where the best validation loss occurred.
-              - last_epoch (int): Updated cumulative epoch number reached at the end of this run.
-              - best_val_loss (float): Updated overall best validation loss.
-              - train_loss_at_best (float): Updated training loss corresponding to the best validation loss epoch.
-        """
-        # Note: No internal initialization - relies on passed-in cumulative state arguments.
-        # 'best_model_state' argument directly holds the state to be potentially returned.
-
-        # --- Training Loop: Continue from last_epoch + 1 up to rung_max_epochs ---
-        for current_epoch in range(last_epoch + 1, rung_max_epochs + 1):
-
-            # --- Training Phase ---
-            model.train()
-            epoch_train_loss_sum = 0.0
-            for features, targets_batch, weights in train_loader:
-                features, targets_batch, weights = features.to(DEVICE), targets_batch.to(DEVICE), weights.to(DEVICE)
-                outputs = model(features)
-                loss = self.weighted_cross_entropy_loss(outputs, targets_batch, weights)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                epoch_train_loss_sum += loss.item()
-            avg_train_loss = epoch_train_loss_sum / len(train_loader)
-
-            # --- Validation Phase ---
-            model.eval()
-            epoch_val_loss_sum = 0.0
-            with torch.no_grad():
-                for features, targets_batch, weights in val_loader:
-                    features, targets_batch, weights = features.to(DEVICE), targets_batch.to(DEVICE), weights.to(DEVICE)
-                    outputs = model(features)
-                    loss = self.weighted_cross_entropy_loss(outputs, targets_batch, weights)
-                    epoch_val_loss_sum += loss.item()
-            avg_val_loss = epoch_val_loss_sum / len(val_loader)
-
-            # --- Update Cumulative State ---
-            last_epoch = current_epoch # Update last epoch reached
-
-            if avg_val_loss < best_val_loss:
-                # Found a new overall best performance
-                best_val_loss = avg_val_loss
-                best_epoch = last_epoch # Update cumulative best epoch
-                train_loss_at_best = avg_train_loss # Record corresponding train loss
-                best_model_state = copy.deepcopy(model.state_dict()) # Update the best state *directly*
-                patience_used = 0 # Reset cumulative patience
+    def _parse_best_params_from_csv(self, results_df = None) -> Dict:
+        """Reads the best parameters from the CV results CSV file."""
+        if results_df is None:
+            results_df = pd.read_csv(self.results_save_path)
+        best_params_series = results_df.iloc[0]
+        parsed_params = {}
+        for key, value in best_params_series.items():
+            if key == 'hidden_layers':
+                # Safely evaluate the string representation of the list
+                try:
+                    parsed_params[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                     # Handle cases where it might be empty or not a list string
+                     # Or if the key doesn't exist / wasn't saved correctly
+                     # Defaulting to empty list if parsing fails
+                     print(f"Warning: Could not parse 'hidden_layers' value '{value}'. Defaulting to [].")
+                     parsed_params[key] = []
+            elif key == 'mean_cv_score':
+                 parsed_params[key] = pd.to_numeric(value) # Keep score as float
             else:
-                # No improvement
-                patience_used += 1 # Increment cumulative patience
-
-            # --- Check Termination Conditions ---
-            if patience_used >= rung_patience:
-                break # Stop training for this fold/rung
-
-        # --- Prepare Return Values ---
-        last_model_state = copy.deepcopy(model.state_dict())
-
-        # Return the updated cumulative metrics and states
-        return (best_model_state, last_model_state, patience_used,
-                best_epoch, last_epoch, best_val_loss, train_loss_at_best)
+                # Attempt to convert other params to numeric, fallback to original if error
+                try:
+                    num_val = pd.to_numeric(value)
+                    # Check if it's an integer that was saved as float (e.g., n_hidden)
+                    if np.issubdtype(type(num_val), np.integer) or num_val == int(num_val):
+                        parsed_params[key] = int(num_val)
+                    else:
+                        parsed_params[key] = num_val
+                except ValueError:
+                    parsed_params[key] = value # Keep as string if not numeric
+        return parsed_params
 
     def _train_one_config(self,
-                            config: Dict[str, Any],
-                            config_idx: int,
-                            config_history: Dict[str, Any], # Renamed from history_entry
+                            config: Dict[str, Any], # Hyperparam config for this run
+                            config_history: Dict[str, Any],
                             dh: 'DataHandler',
                             rung_epochs: int,
                             rung_patience: int,
@@ -640,7 +501,6 @@ class NNModel:
 
         Args:
             config (Dict[str, Any]): The dictionary of hyperparameters for this config.
-            config_idx (int): Unique index/ID for this configuration (can be useful, though not strictly used internally now).
             config_history (Dict[str, Any]): The dictionary associated with this config_idx
                                             in the main config history structure. This dictionary
                                             will be updated by this method.
@@ -653,6 +513,8 @@ class NNModel:
             None: Modifies the `config_history` dictionary directly.
         """
         fold_best_val_losses = []
+        fold_train_losses_at_best = []
+        fold_last_epochs = []
         fold_best_epochs = []
 
         # Loop through the cross-validation folds
@@ -666,14 +528,10 @@ class NNModel:
             # --- Initialize or Unpack Cumulative State for the Fold ---
             if f'fold_{j}_history' not in config_history:
                 # First run: initialize required arguments for _train_one_fold
-                initial_state = copy.deepcopy(model.state_dict())
-                best_model_state = initial_state
-                last_model_state = initial_state # State to load (same as initial best)
-                best_val_loss = float('inf')
-                best_epoch = 0
-                train_loss_at_best = float('inf')
-                last_epoch = 0
-                patience_used = 0
+                best_model_state = copy.deepcopy(model.state_dict())
+                last_model_state = copy.deepcopy(model.state_dict())
+                best_val_loss, train_loss_at_best = float('inf')
+                best_epoch, last_epoch, patience_used = 0
             else:
                 # Resuming: directly unpack the previous state tuple
                 # Tuple order: (best_state, last_state, patience, best_ep, last_ep, best_loss, train_loss)
@@ -683,49 +541,103 @@ class NNModel:
                 # Load the *last* state from the previous run into the model
                 model.load_state_dict(last_model_state) # Use the unpacked state
 
-            # --- Call the training function for this fold ---
-            updated_fold_history = self._train_one_fold(
-                model=model,
-                optimizer=optimizer,
-                train_loader=train_loader,
-                val_loader=val_loader,
-                rung_max_epochs=rung_epochs,
-                rung_patience=rung_patience,
-                # Pass the unpacked or initial cumulative state values
-                best_model_state=best_model_state,
-                best_val_loss=best_val_loss,
-                best_epoch=best_epoch,
-                train_loss_at_best=train_loss_at_best,
-                last_epoch=last_epoch,
-                patience_used=patience_used
-            )
+            # --- Training Loop: Continue from last_epoch + 1 up to rung_max_epochs ---
+            for current_epoch in range(last_epoch + 1, rung_epochs + 1):
+                # --- Training Phase ---
+                model.train()
+                epoch_train_loss_sum = 0.0
+                for features, targets_batch, weights in train_loader:
+                    features, targets_batch, weights = features.to(DEVICE), targets_batch.to(DEVICE), weights.to(DEVICE)
+                    outputs = model(features)
+                    loss = self.weighted_cross_entropy_loss(outputs, targets_batch, weights)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    epoch_train_loss_sum += loss.item()
+                avg_train_loss = epoch_train_loss_sum / len(train_loader)
 
-            # --- Update config_history directly for this fold ---
-            config_history[f'fold_{j}_history'] = updated_fold_history
+                # --- Validation Phase ---
+                model.eval()
+                epoch_val_loss_sum = 0.0
+                with torch.no_grad():
+                    for features, targets_batch, weights in val_loader:
+                        features, targets_batch, weights = features.to(DEVICE), targets_batch.to(DEVICE), weights.to(DEVICE)
+                        outputs = model(features)
+                        loss = self.weighted_cross_entropy_loss(outputs, targets_batch, weights)
+                        epoch_val_loss_sum += loss.item()
+                avg_val_loss = epoch_val_loss_sum / len(val_loader)
+
+                # --- Update Cumulative State ---
+                last_epoch = current_epoch # Update last epoch reached
+
+                if avg_val_loss < best_val_loss:
+                    # Found a new overall best performance
+                    best_val_loss = avg_val_loss
+                    best_epoch = last_epoch # Update cumulative best epoch
+                    train_loss_at_best = avg_train_loss # Record corresponding train loss
+                    best_model_state = copy.deepcopy(model.state_dict()) # Update the best state *directly*
+                    patience_used = 0 # Reset cumulative patience
+                else:
+                    # No improvement
+                    patience_used += 1 # Increment cumulative patience
+
+                # --- Check Termination Conditions ---
+                if patience_used >= rung_patience:
+                    break # Stop training for this fold/rung
+
+            # --- Prepare last model state ---
+            last_model_state = copy.deepcopy(model.state_dict())
+
+            # --- Update config_history for this fold ---
+            config_history[f'fold_{j}_history'] = (best_model_state, 
+                                                   last_model_state, 
+                                                   patience_used,
+                                                   best_epoch, 
+                                                   last_epoch, 
+                                                   best_val_loss, 
+                                                   train_loss_at_best)
 
             # Extract the final best val loss and best epoch for averaging
-            fold_best_val_losses.append(updated_fold_history[5]) # Index 5 is best_val_loss
-            fold_best_epochs.append(updated_fold_history[3]) # Index 3 is best_epoch
+            fold_best_val_losses.append(best_val_loss) 
+            fold_best_epochs.append(best_epoch)
+            fold_train_losses_at_best.append(train_loss_at_best)
+            fold_last_epochs.append(last_epoch)
 
             # --- Optional: Clean up fold-specific resources ---
             del model, optimizer
             if DEVICE.type == 'cuda': torch.cuda.empty_cache()
             elif DEVICE.type == 'mps': torch.mps.empty_cache()
 
-        # --- Calculate and update mean validation loss in config_history ---
-        config_history['mean_val_loss'] = np.mean(fold_best_val_losses)
-        config_history['mean_best_epoch'] = np.mean(fold_best_epochs)
+        # --- Calculate and update means in config_history ---
+        config_history['best_val_loss'] = np.mean(fold_best_val_losses)
+        config_history['best_epoch'] = np.mean(fold_best_epochs)
+        config_history['train_loss_at_best'] = np.mean(fold_train_losses_at_best)
+        config_history['last_epoch'] = np.mean(fold_last_epochs)
         
         # return the updated config_history
         return config_history
     
+    def _prune_config_history(self, 
+                              cv_history_dict: Dict[int, Dict[str, Any]],
+                              n_promote: int):
+        """Accepts a dictionary of config histories and prunes it to the best `n_promote` entries based on the lowest 'best_val_loss' items. Returns the pruned dictionary."""
+        # Sort the config histories by 'mean_best_val_loss'
+        sorted_items = sorted(cv_history_dict.items(), key=lambda item: item[1]['best_val_loss'])
+        # Select the top `dict_size` entries
+        pruned_items = sorted_items[:n_promote]
+        # Return the pruned dictionary
+        return {idx: history for idx, history in pruned_items}
+
     def cross_validate(self,
                          dh: 'DataHandler',
                          param_grid: Dict[str, Any],
+                         optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE,
                          # Define the rung schedule directly
                          rung_schedule: List[Tuple[int, int]] = zip(RUNG_EPOCHS, RUNG_PATIENCE),
                          reduction_factor: int = 3, # eta
-                         optimizer_choice: Type[optim.Optimizer] = OPTIMIZER_CHOICE
+                         min_finalists: int = 3, # min number of finalists to store
+                         max_finalists: int = 10, # max number of finalists to store
+                         save: bool = True
                         ) -> None:
         """
         Performs cross-validation using a Successive Halving Algorithm (SHA) approach.
@@ -745,16 +657,16 @@ class NNModel:
         Args:
             dh (DataHandler): The data handler instance.
             param_grid (Dict[str, Any]): The grid of hyperparameters to explore.
-            rung_schedule (List[Tuple[int, int]]): A list of tuples, where each
-                tuple defines a rung: (cumulative_max_epochs, cumulative_patience).
-                Example: [(25, 10), (50, 15), ... , (150, 35)].
-            reduction_factor (int): Factor by which to reduce the number of configs
-                                   at each stage (e.g., 3 means keep top 1/3). Defaults to 3.
             optimizer_choice (Type[optim.Optimizer]): The optimizer class to use.
+            rung_schedule (List[Tuple[int, int]]): A list of tuples (rung_epochs, rung_patience). Defaults to `[(25, 15), (50, 20), ... , (200, 50)]`.
+            reduction_factor (int): Factor by which to reduce the number of configs
+                                   at each stage (e.g., 3 means keep top 2/3). Defaults to 3.
+            min_finalists (int): Minimum number of configurations to keep at the end. Defaults to 3.
+            max_finalists (int): Maximum number of configurations to keep at the end. Defaults to 10.
+            save (bool): Whether to save the results to a CSV file. Defaults to True.
 
         Returns:
-            None: This method primarily updates `self.best_params` and saves results
-                  to a CSV file defined by `self.results_save_path`.
+            results_df: Dataframe with the finalist configs and their performance metrics.
         """
         print(f"\n--- Starting SHA Cross-Validation for {self.model_name.upper()} (eta={reduction_factor}) ---")
         start_time = time.time()
@@ -763,96 +675,71 @@ class NNModel:
         all_configs_list = list(ParameterGrid(param_grid))
         num_initial_configs = len(all_configs_list)
         # Map index to config for easy lookup
-        config_dict = {i: config for i, config in enumerate(all_configs_list)}
+        config_dict = {i: config for i, config in enumerate(all_configs_list,1)}
         # Main history dictionary: Stores state for active configs
-        # Value format will be: {'fold_0_history': tuple, ..., 'mean_val_loss': float, 'mean_best_epoch': float}
-        cv_history_dict = {i: {} for i in range(num_initial_configs)} # Start with empty dicts for all
+        # Value format will be: {'fold_1_history': tuple, ..., 'mean_best_val_loss': float, 'mean_best_epoch': float}
+        cv_history_dict = {i: {} for i in range(num_initial_configs)} # Start with empty dicts
 
         # --- 2. Rung Iteration ---
         num_rungs = len(rung_schedule)
-        for rung_idx, (rung_epochs, rung_patience) in enumerate(rung_schedule):
+        for rung, (rung_epochs, rung_patience) in enumerate(rung_schedule, 1):
             num_configs_in_rung = len(cv_history_dict)
             if num_configs_in_rung == 0: # Should not happen if eta >= 1
                  print("Warning: No configurations remaining. Stopping SHA early.")
                  break
-
-            print(f"\n>>> SHA Rung {rung_idx+1}/{num_rungs} | Target Epochs: {rung_epochs} | Patience: {rung_patience} | Evaluating {num_configs_in_rung} configs <<<")
-
-            rung_results = {} # Temporary storage for results of this rung: {config_idx: (mean_loss, mean_epoch, updated_fold_tuples)}
+            print("-------------------------------------------------------")
+            print(f"\n>>> SHA Rung {rung}/{num_rungs} | Target Epochs: {rung_epochs} | Patience: {rung_patience} | Evaluating {num_configs_in_rung} configs <<<")
 
             # --- Evaluate each active configuration ---
-            for idx in cv_history_dict.keys():
-                #print(f"  Rung {rung_idx+1} - Config {i+1}/{num_configs_in_rung} (ID: {config_idx})")
-
+            for config_idx, config_history in cv_history_dict.items():
+                config=config_dict[config_idx]
                 # Call helper to train/evaluate this config for the current rung
-                # Assuming _train_one_config returns: (mean_best_val_loss, mean_best_epoch, updated_fold_data_list)
-                # where updated_fold_data_list is List[7-item state tuple]
                 updated_config_history = self._train_one_config(
-                    config=config_dict[idx],
-                    # Pass the history dict directly, _train_one_config handles unpacking
-                    config_history=cv_history_dict[idx],
-                    dh=dh,
-                    rung_epochs=rung_epochs,
-                    rung_patience=rung_patience,
-                    optimizer_choice=optimizer_choice
-                )
+                                                config,
+                                                config_history,
+                                                dh,
+                                                rung_epochs,
+                                                rung_patience,
+                                                optimizer_choice
+                                            )
+                # Print config id, last epoch, best epoch, train loss at best, and best val loss
+                config_str = "Config" +  str(config_idx).rjust(3) + ": "
+                epochs_str = "Last epoch: " + str(updated_config_history['last_epoch']).rjust(3) + " | " + "Best epoch: " + str(updated_config_history['best_epoch']).rjust(3) + " | "
+                losses_str = "Train loss at best: " + f"{updated_config_history['train_loss_at_best']:.6f}".rjust(10) + " | " + "Best val loss: " + f"{updated_config_history['best_val_loss']:.6f}".rjust(10)
 
-                # Store the results temporarily for ranking
-                rung_results[config_idx] = (mean_loss, mean_epoch, updated_fold_tuples)
-                # Note: previous_history dict was updated directly inside _train_one_config
+                print(config_str + epochs_str + losses_str)
+
+                # Update the main history dictionary with the results
+                cv_history_dict[config_idx] = updated_config_history
 
             # --- 3. Pruning Step (if not the last rung) ---
-            if rung_idx < num_rungs - 1:
-                n_promote = max(1, int(np.floor(num_configs_in_rung / reduction_factor)))
 
-                # Sort configs evaluated in this rung by performance (lower loss is better)
-                # Items are (config_idx, (mean_loss, mean_epoch, fold_tuples))
-                sorted_rung_results = sorted(rung_results.items(), key=lambda item: item[1][0])
-
-                # Identify the indices of the configurations to keep
-                surviving_indices = {idx for idx, _ in sorted_rung_results[:n_promote]}
-
-                # Create the history dictionary for the *next* rung
-                next_cv_history_dict = {}
-                for idx in surviving_indices:
-                    # Retrieve the full history dict which was updated by _train_one_config
-                    next_cv_history_dict[idx] = cv_history_dict[idx] # Carry over the updated history
-
-                cv_history_dict = next_cv_history_dict # Replace current history with survivors' history
-                print(f"  Rung {rung_idx+1} completed. Promoted {len(cv_history_dict)} configurations.")
-
+            # Determine the number of configurations to promote
+            if rung < num_rungs:
+                # Not last round, so at least min_finalist configs should be promoted
+                n_promote = max(min_finalists, num_configs_in_rung // reduction_factor)
             else:
-                # Last rung completed
-                print(f"  Final rung {rung_idx+1} completed. {len(cv_history_dict)} configurations survived.")
+                # Last rung, so promote up to max_finalists
+                n_promote = min(max_finalists, num_configs_in_rung)
 
+            # Prune
+            cv_history_dict = self._prune_config_history(cv_history_dict, n_promote)
+
+        end_time = time.time()
+        print(f"--- Finished SHA Cross-Validation for {self.model_name.upper()} ({end_time - start_time:.2f} seconds) ---")
 
         # --- 4. Post-SHA Aggregation for Final Report ---
-        print("\n--- Aggregating Final Results ---")
         final_results_list = []
-        # Iterate through the *original* set of configs to report on all
-        for config_idx, config_params in idx_to_config.items():
-            if config_idx in cv_history_dict:
-                # Config survived or was evaluated in the last rung
-                final_history = cv_history_dict[config_idx]
-                # Determine the max epochs reached for this config based on fold history
-                # (Could also be inferred from the last rung it participated in)
-                last_epochs_per_fold = [final_history.get(f'fold_{j}_history', (None,) * 7)[4] for j in range(num_folds)]
-                # Use max epoch reached across folds, default 0 if no history
-                max_epoch_reached = max(last_epochs_per_fold) if any(e is not None for e in last_epochs_per_fold) else 0
-
-                result_entry = {
-                    **config_params,
-                    'mean_cv_score': final_history.get('mean_val_loss', float('inf')),
-                    'mean_best_epoch': final_history.get('mean_best_epoch', 0), # Assumes _train_one_config added this
-                    'epochs_trained': max_epoch_reached # Reflects actual max training epoch
-                }
-            else:
-                # Config was pruned earlier - report based on its last available data (requires modification to store this)
-                # --- Simplification: Only report survivors ---
-                # If we only report survivors, we skip pruned configs.
-                # To report all requires storing performance just before pruning.
-                # Let's stick to reporting only the final survivors for simplicity here.
-                continue # Skip configs that didn't make it to the final cv_history_dict
+        # Iterate through the final set of config histories
+        for config_idx, config_history in cv_history_dict.items():
+            config = config_dict[config_idx]
+            result_entry = {
+                **config, # Include all hyperparameters from the config
+                'last_epoch': config_history['last_epoch'],
+                'best_epoch': config_history['best_epoch'],
+                'train_loss_at_best': config_history['train_loss_at_best'],
+                'best_val_loss': config_history['best_val_loss']
+                            }
 
             # Stringify list-like hyperparameters for CSV compatibility
             if 'hidden_layers' in result_entry:
@@ -860,27 +747,18 @@ class NNModel:
             final_results_list.append(result_entry)
 
         # --- 5. Save Final Results ---
-        results_df = pd.DataFrame(final_results_list)
-        if not results_df.empty:
-            results_df = results_df.sort_values(by='mean_cv_score', ascending=True).reset_index(drop=True)
-            results_df.to_csv(self.results_save_path, index=False)
-            print(f"Final results for {len(results_df)} surviving configurations saved to: {self.results_save_path}")
+        results_df = pd.DataFrame(final_results_list) 
+        results_df = results_df.sort_values(by='best_val_loss', ascending=True).reset_index(drop=True)
+        results_df.to_csv(self.results_save_path, index=False)
+        print(f"Final results for {len(results_df)} surviving configurations saved to: {self.results_save_path}")
 
-            # --- 6. Store Best Params ---
-            # Best params are simply the config corresponding to the top row of the saved results
-            # Use the existing parser which expects specific column names
-            self.best_params = self._parse_best_params_from_csv() # Assumes parser works with the output format
+        # --- 6. Store Best Params ---
+        self.best_params = self._parse_best_params_from_csv(results_df) 
+        
+        # return the results_df to display nicely in the notebook
+        return results_df
 
-            print(f"\nBest {self.model_name.upper()} SHA CV params found: {self.best_params}")
-            print(f"(Based on performance after {results_df.iloc[0]['epochs_trained']} max epochs)")
-            print(f"Best Mean CV Score: {results_df.iloc[0]['mean_cv_score']:.6f}")
-            print(f"Best Mean Epoch: {results_df.iloc[0]['mean_best_epoch']:.2f}")
-        else:
-            print("Warning: No configurations survived the SHA process.")
-            self.best_params = {} # No best params found
 
-        end_time = time.time()
-        print(f"--- Finished SHA Cross-Validation for {self.model_name.upper()} ({end_time - start_time:.2f} seconds) ---")
 
 
     def cross_validate(self,
@@ -960,36 +838,7 @@ class NNModel:
         print(f"\nBest {self.model_name.upper()} CV params: {self.best_params} (Score: {best_mean_loss:.6f})")
         print(f"--- Finished Cross-Validation for {self.model_name.upper()} ---")
 
-    def _parse_best_params_from_csv(self) -> Dict:
-        """Reads the best parameters from the CV results CSV file."""
-        results_df = pd.read_csv(self.results_save_path)
-        best_params_series = results_df.iloc[0]
-        parsed_params = {}
-        for key, value in best_params_series.items():
-            if key == 'hidden_layers':
-                # Safely evaluate the string representation of the list
-                try:
-                    parsed_params[key] = ast.literal_eval(value)
-                except (ValueError, SyntaxError):
-                     # Handle cases where it might be empty or not a list string
-                     # Or if the key doesn't exist / wasn't saved correctly
-                     # Defaulting to empty list if parsing fails
-                     print(f"Warning: Could not parse 'hidden_layers' value '{value}'. Defaulting to [].")
-                     parsed_params[key] = []
-            elif key == 'mean_cv_score':
-                 parsed_params[key] = pd.to_numeric(value) # Keep score as float
-            else:
-                # Attempt to convert other params to numeric, fallback to original if error
-                try:
-                    num_val = pd.to_numeric(value)
-                    # Check if it's an integer that was saved as float (e.g., n_hidden)
-                    if np.issubdtype(type(num_val), np.integer) or num_val == int(num_val):
-                        parsed_params[key] = int(num_val)
-                    else:
-                        parsed_params[key] = num_val
-                except ValueError:
-                    parsed_params[key] = value # Keep as string if not numeric
-        return parsed_params
+
 
     def train_final_model(self,
                           dh: DataHandler,
