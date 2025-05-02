@@ -237,7 +237,8 @@ class DataHandler:
         """Creates DataLoaders for training and validation sets."""
 
         # Create tensor datasets
-        dataset = TensorDataset(self._create_tensors(data))
+        X, y, wts = self._create_tensors(data)
+        dataset = TensorDataset(X, y, wts)
 
         loader = DataLoader(dataset,
                             batch_size=batch_size,
@@ -396,7 +397,7 @@ class NNModel:
     determined by its model_name and associated param_grid.
     """
 
-    def __init__(self, model_name: str, param_grid: Dict):
+    def __init__(self, model_name: str):
         """
         Initializes the NNModel handler for a specific model configuration.
 
@@ -409,7 +410,6 @@ class NNModel:
                                that _build_network can interpret.
         """
         self.model_name: str = model_name
-        self.param_grid: Dict = param_grid
         self.model: Union[nn.Module, None] = None
         self.best_params: Dict = {}
         self.final_loss_history: List[Dict[str, Any]] = []
@@ -513,6 +513,7 @@ class NNModel:
 
     def _train_one_config(self,
                             config: Dict[str, Any], # Hyperparam config for this run
+                            config_id: int, # Unique ID for this config
                             config_history: Dict[str, Any],
                             dh: 'DataHandler',
                             rung_epochs: int,
@@ -521,12 +522,7 @@ class NNModel:
                            ) -> None: # Returns None, updates config_history directly
         """
         Evaluates a single hyperparameter configuration across all CV folds
-        up to a target cumulative epoch count, resuming state, and updates
-        the provided config_history entry directly.
-
-        Calls `_train_one_fold` for each fold, providing the necessary state
-        information retrieved from `config_history`. Updates the fold-specific
-        history tuples and the 'mean_val_loss' within the `config_history`.
+        up to a target cumulative epoch count, resuming state, and returns an updated config_history dict.
 
         Args:
             config (Dict[str, Any]): The dictionary of hyperparameters for this config.
@@ -539,12 +535,15 @@ class NNModel:
             optimizer_choice (Type[optim.Optimizer]): The optimizer class to use.
 
         Returns:
-            None: Modifies the `config_history` dictionary directly.
+            config_history: Dict containing the updated history for this config.
         """
         fold_best_val_losses = []
         fold_train_losses_at_best = []
         fold_last_epochs = []
         fold_best_epochs = []
+
+        # start timer
+        start_time = time.time()
 
         # Loop through the cross-validation folds
         for j, (train_loader, val_loader) in enumerate(dh.cv_dataloaders,1):
@@ -559,8 +558,9 @@ class NNModel:
                 # First run: initialize required arguments for _train_one_fold
                 best_model_state = copy.deepcopy(model.state_dict())
                 last_model_state = copy.deepcopy(model.state_dict())
-                best_val_loss, train_loss_at_best = float('inf')
-                best_epoch, last_epoch, patience_used = 0
+                best_val_loss = float('inf')
+                train_loss_at_best = float('inf')
+                best_epoch, last_epoch, patience_used = 0, 0, 0
             else:
                 # Resuming: directly unpack the previous state tuple
                 # Tuple order: (best_state, last_state, patience, best_ep, last_ep, best_loss, train_loss)
@@ -638,10 +638,23 @@ class NNModel:
             elif DEVICE.type == 'mps': torch.mps.empty_cache()
 
         # --- Calculate and update means in config_history ---
-        config_history['best_val_loss'] = np.mean(fold_best_val_losses)
-        config_history['best_epoch'] = np.mean(fold_best_epochs)
-        config_history['train_loss_at_best'] = np.mean(fold_train_losses_at_best)
-        config_history['last_epoch'] = np.mean(fold_last_epochs)
+        config_history['best_val_loss'] = np.round(np.mean(fold_best_val_losses),6)
+        config_history['best_epoch'] = int(np.mean(fold_best_epochs))
+        config_history['train_loss_at_best'] = np.round(np.mean(fold_train_losses_at_best),6)
+        config_history['last_epoch'] = int(np.mean(fold_last_epochs))
+
+        # Get time taken for this config in seconds
+        time_taken = time.time() - start_time
+
+        # Pretty print the results for this config
+        config_str = '|  ' + str(config_id).rjust(4) + '  |'
+        last_epoch_str = '    ' + str(config_history['last_epoch']).rjust(3) + '     |'
+        best_epoch_str = '    ' + str(config_history['best_epoch']).rjust(3) + '     |'
+        train_loss_str = '  ' + str(config_history['train_loss_at_best']).rjust(8) + '  |'
+        val_loss_str = '  ' + str(config_history['best_val_loss']).rjust(8) + '  |'
+        time_str = f"{time_taken:.2f}s"
+        time_str = '    ' + time_str.rjust(8) + '    |'
+        print(config_str + last_epoch_str + best_epoch_str + train_loss_str + val_loss_str + time_str)
         
         # return the updated config_history
         return config_history
@@ -707,46 +720,39 @@ class NNModel:
         config_dict = {i: config for i, config in enumerate(all_configs_list,1)}
         # Main history dictionary: Stores state for active configs
         # Value format will be: {'fold_1_history': tuple, ..., 'mean_best_val_loss': float, 'mean_best_epoch': float}
-        cv_history_dict = {i: {} for i in range(num_initial_configs)} # Start with empty dicts
+        cv_history_dict = {i+1: {} for i in range(num_initial_configs)} # Start with empty dicts
 
         # --- 2. Rung Iteration ---
         num_rungs = len(rung_schedule)
         for rung, (rung_epochs, rung_patience) in enumerate(rung_schedule, 1):
             num_configs_in_rung = len(cv_history_dict)
-            if num_configs_in_rung == 0: # Should not happen if eta >= 1
-                 print("Warning: No configurations remaining. Stopping SHA early.")
-                 break
-            print("-------------------------------------------------------")
-            print(f"\n>>> SHA Rung {rung}/{num_rungs} | Target Epochs: {rung_epochs} | Patience: {rung_patience} | Evaluating {num_configs_in_rung} configs <<<")
-
+            print("-------------------------------------------------------------------------------")
+            print(f">>> SHA Rung {rung}/{num_rungs} | Target Epochs: {rung_epochs} | Patience: {rung_patience} | Evaluating {num_configs_in_rung} configs <<<")
+            print("-------------------------------------------------------------------------------")
+            print("| Config | Last Epoch | Best Epoch | Train Loss |  Val Loss  | Time (seconds) |")
             # --- Evaluate each active configuration ---
-            for config_idx, config_history in cv_history_dict.items():
-                config=config_dict[config_idx]
+            for config_id, config_history in cv_history_dict.items():
+                config=config_dict[config_id]
                 # Call helper to train/evaluate this config for the current rung
                 updated_config_history = self._train_one_config(
                                                 config,
+                                                config_id,
                                                 config_history,
                                                 dh,
                                                 rung_epochs,
                                                 rung_patience,
                                                 optimizer_choice
                                             )
-                # Print config id, last epoch, best epoch, train loss at best, and best val loss
-                config_str = "Config" +  str(config_idx).rjust(3) + ": "
-                epochs_str = "Last epoch: " + str(updated_config_history['last_epoch']).rjust(3) + " | " + "Best epoch: " + str(updated_config_history['best_epoch']).rjust(3) + " | "
-                losses_str = "Train loss at best: " + f"{updated_config_history['train_loss_at_best']:.6f}".rjust(10) + " | " + "Best val loss: " + f"{updated_config_history['best_val_loss']:.6f}".rjust(10)
-
-                print(config_str + epochs_str + losses_str)
 
                 # Update the main history dictionary with the results
-                cv_history_dict[config_idx] = updated_config_history
+                cv_history_dict[config_id] = updated_config_history
 
             # --- 3. Pruning Step (if not the last rung) ---
 
             # Determine the number of configurations to promote
             if rung < num_rungs:
                 # Not last round, so at least min_finalist configs should be promoted
-                n_promote = max(min_finalists, num_configs_in_rung // reduction_factor)
+                n_promote = max(min_finalists, int(num_configs_in_rung * (1-1/reduction_factor)))
             else:
                 # Last rung, so promote up to max_finalists
                 n_promote = min(max_finalists, num_configs_in_rung)
@@ -760,8 +766,8 @@ class NNModel:
         # --- 4. Post-SHA Aggregation for Final Report ---
         final_results_list = []
         # Iterate through the final set of config histories
-        for config_idx, config_history in cv_history_dict.items():
-            config = config_dict[config_idx]
+        for config_id, config_history in cv_history_dict.items():
+            config = config_dict[config_id]
             result_entry = {
                 **config, # Include all hyperparameters from the config
                 'last_epoch': config_history['last_epoch'],
