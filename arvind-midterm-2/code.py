@@ -990,7 +990,6 @@ class XGBoostModel:
         dtrain = dh.get_xgb_data('train') 
         config_list = list(ParameterGrid(param_grid))
         print(f"\n--- Starting Cross-Validation for {self.model_name.upper()}. Testing   {len(config_list)} configs ---")
-        print(f"Using device {DEVICE}.")
         print("--------------------------------------")
         start_time = time.time()
         for i, config in enumerate(config_list, 1):
@@ -1003,9 +1002,8 @@ class XGBoostModel:
                              }
             # add gpu_hist param if cuda is available
             if DEVICE.type == 'cuda':
-                params_for_cv['tree_method'] = 'hist'
                 params_for_cv['device'] = DEVICE
-                
+                print(f"Using GPU for XGBoost training on {DEVICE}.")
 
             #NOTE: setting shuffle=False ensures that the folds are exactly same as what's used by other models
             cv_results_df = xgb.cv(
