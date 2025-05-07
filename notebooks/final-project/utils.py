@@ -40,10 +40,6 @@ def get_model(model_name: str):
 
 # --- Data Transformations ---
 
-# --- Data Transformations (Simplified Version) ---
-
-# --- Data Transformations (Simplified, Hardcoded Version) ---
-
 def get_transforms(augment: bool):
     """Creates data transformations using hardcoded ImageNet stats and augmentations.
 
@@ -76,10 +72,7 @@ def get_transforms(augment: bool):
         # Return the non-augmented transform for validation/test or non-augmented training
         return val_test_transform
 
-
 # --- Dataset and DataLoader ---
-
-# --- Dataset and DataLoader (with Train/Val Split) ---
 
 def get_datasets(task: str,
                  root_dir: str = './data', 
@@ -144,10 +137,10 @@ def get_dataloaders(task: str, dataset, batch_size: int):
 
 def adapt_model_head(model, model_name: str):
     """Adapts the final classification layer of the model for NUM_CLASSES."""
-    if model_name == 'resnet18':
+    if model_name == 'resnet':
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, NUM_CLASSES)
-    elif model_name == 'mobilenet_v3_small':
+    elif model_name == 'mobilenet':
         # The classifier is a Sequential module; replace the last layer
         num_ftrs = model.classifier[-1].in_features
         model.classifier[-1] = nn.Linear(num_ftrs, NUM_CLASSES)
