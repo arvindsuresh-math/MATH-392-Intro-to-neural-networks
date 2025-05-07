@@ -29,14 +29,14 @@ NUM_CLASSES = 37 # OxfordIIITPet dataset has 37 classes
 # --- Model Loading ---
 
 def get_model(model_name: str):
-    """Loads a pre-trained model (ResNet18 or MobileNetV3-Small) and its weights object."""
+    """Loads a pre-trained model (ResNet18 or MobileNetV3-Small)."""
     if model_name == 'resnet':
         weights = torchvision.models.ResNet18_Weights.DEFAULT
         model = torchvision.models.resnet18(weights=weights)
     elif model_name == 'mobilenet':
         weights = torchvision.models.MobileNet_V3_Small_Weights.DEFAULT
         model = torchvision.models.mobilenet_v3_small(weights=weights)
-    return model, weights
+    return model
 
 # --- Data Transformations ---
 
@@ -77,7 +77,6 @@ def get_transforms(augment: bool):
 def get_datasets(task: str,
                  root_dir: str = './data', 
                  augment_train: bool = False, 
-                 weights_obj = None, 
                  val_split_ratio: float = 0.2, 
                  random_seed: int = 42):
     """Loads OxfordIIITPet, splits trainval into train/val, and returns train, val, test sets."""
@@ -94,7 +93,16 @@ def get_datasets(task: str,
             transform=val_test_transforms
         )
         return test_dataset
-    else:
+    elif task == 'train':
+        # Load the train dataset (always uses non-augmented transforms)
+        train_dataset = datasets.OxfordIIITPet(
+            root=root_dir,
+            split='trainval',
+            download=True,
+            transform=train_transforms
+        )
+        return train_dataset
+    elif task == 'trainval':
         # Load the full trainval dataset *with non-augmented transforms* first
         full_trainval_dataset = datasets.OxfordIIITPet(
             root=root_dir,
@@ -120,17 +128,18 @@ def get_datasets(task: str,
         )
         train_dataset = data.Subset(train_dataset_reloaded, train_indices)
         val_dataset = data.Subset(full_trainval_dataset, val_indices)
-        print(f"Dataset split: Train samples = {len(train_dataset)}, Val samples = {len(val_dataset)}")
         return train_dataset, val_dataset 
+    else:
+        raise ValueError(f"Unknown task: {task}. Expected 'train' (for final training), 'trainval' (for training and validation), or 'test' (for final testing).")
 
 def get_dataloaders(task: str, dataset, batch_size: int):
     """Creates train, validation, and test DataLoaders depending on task."""
-    if task == 'test' or task == 'val':
+    if task == 'val':
         loader = data.DataLoader(dataset, batch_size=batch_size * 2, shuffle=False, num_workers=2, pin_memory=True)
     elif task == 'train':
         loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
     else:
-        raise ValueError(f"Unknown task: {task}. Expected 'train', 'val', or 'test'.")
+        raise ValueError(f"Unknown task: {task}. Expected 'train' or 'val'.")
     return loader
 
 # --- Model Modification ---
