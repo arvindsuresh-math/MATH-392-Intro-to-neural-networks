@@ -1104,11 +1104,9 @@ class XGBoostModel:
 
     def load_model(self):
         """Loads a trained XGBoost Booster model from its saved file."""
-        print(f"\n--- Loading Final Model for {self.model_name.upper()} ---")
-        print(f"Loading model state from: {self.model_save_path}")
         self.model = xgb.Booster()
         self.model.load_model(self.model_save_path)
-        print(f"{self.model_name.upper()} model loaded successfully.")
+        print(f"{self.model_name.upper()} model loaded successfully from {self.model_save_path}.")
 
     def predict(self,
                 dh: 'DataHandler', # Assumes DataHandler class definition exists

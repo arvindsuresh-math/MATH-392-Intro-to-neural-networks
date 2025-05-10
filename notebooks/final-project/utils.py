@@ -40,7 +40,7 @@ def get_model(model_name: str):
 
 # --- Data Transformations ---
 
-def get_transforms(augment: bool):
+def get_transforms(augment: bool = False):
     """Creates data transformations using hardcoded ImageNet stats and augmentations.
 
     Returns an augmented pipeline if augment=True, otherwise a simple resize/normalize pipeline.
@@ -76,11 +76,12 @@ def get_transforms(augment: bool):
 
 def get_datasets(task: str,
                  root_dir: str = './data', 
-                 augment_train: bool = False, 
+                 augment_train: str = 'noaug', 
                  val_split_ratio: float = 0.2, 
                  random_seed: int = 42):
     """Loads OxfordIIITPet, splits trainval into train/val, and returns train, val, test sets."""
     # Get transforms: potentially augmented for train, never for val/test
+    augment_train = True if augment_train == 'aug' else False
     train_transforms = get_transforms(augment=augment_train)
     val_test_transforms = get_transforms(augment=False)
 
