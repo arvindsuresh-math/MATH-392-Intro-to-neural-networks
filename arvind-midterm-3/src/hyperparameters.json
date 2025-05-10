@@ -1,0 +1,51 @@
+{
+  "ridge": {
+    "float": [
+      ["alpha", 1e-5, 10.0, true]
+    ]
+  },
+  "mlp0": {
+    "float": [
+      ["learning_rate", 1e-4, 1e-1, true],
+      ["weight_decay", 1e-7, 1e-2, true]
+    ]
+  },
+  "mlp1": {
+    "float": [
+      ["learning_rate", 1e-4, 1e-1, true],
+      ["weight_decay", 1e-7, 1e-2, true],
+      ["dropout_rate_1", 0.0, 0.5, false]
+    ],
+    "int": [
+      ["n_hidden_1", 8, 128, 8]
+    ]
+  },
+  "mlp2": {
+    "float": [
+      ["learning_rate", 1e-4, 1e-1, true],
+      ["weight_decay", 1e-7, 1e-2, true],
+      ["dropout_rate_1", 0.0, 0.5, false],
+      ["dropout_rate_2", 0.0, 0.5, false]
+    ],
+    "int": [
+      ["n_hidden_1", 8, 128, 8],
+      ["n_hidden_2", 8, 128, 8]
+    ]
+  },
+  "xgboost": {
+    "float": [
+      ["learning_rate", 0.01, 0.3, true],
+      ["gamma", 0.0, 5.0, false],
+      ["subsample", 0.5, 1.0, false],
+      ["colsample_bytree", 0.4, 1.0, false],
+      ["colsample_bylevel", 0.4, 1.0, false],
+      ["colsample_bynode", 0.4, 1.0, false],
+      ["reg_alpha", 1e-8, 10.0, true],
+      ["reg_lambda", 1e-8, 10.0, true]
+    ],
+    "int": [
+      ["max_depth", 3, 12, 1],
+      ["min_child_weight", 1, 20, 1]
+    ]
+  }
+}
