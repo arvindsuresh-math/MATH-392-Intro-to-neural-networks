@@ -1,4 +1,0 @@
-learning_rate,weight_decay,last_epoch,best_epoch,train_loss_at_best,best_val_loss
-0.01,0.001,87,47,0.842698,0.843331
-0.01,0.0001,92,53,0.840768,0.843501
-0.01,1e-05,59,19,0.84157,0.843677
