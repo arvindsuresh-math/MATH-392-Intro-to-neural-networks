@@ -16,7 +16,7 @@ Parent repo for topics course taught at U of Arizona in Spring 2025.
 
 ## Course Details
 
-**Instructor**: Arvind Suresh ([arvindsuresh@arizona.edu](arvindsuresh@arizona.edu))
+**Instructor**: Arvind Suresh ([arvindsuresh@arizona.edu])
 
 **Credits**: 3 (counts toward the ‘Application Course’ requirement for math majors)
 
